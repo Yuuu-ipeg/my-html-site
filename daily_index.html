@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1日の行動記録</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .timer-section {
+            text-align: center;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .timer-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: #007AFF;
+            margin: 20px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .timer-info {
+            color: #666;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+
+        button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        button.stop {
+            background: #FF3B30;
+        }
+
+        button.stop:hover {
+            background: #cc0000;
+        }
+
+        button.export {
+            background: #34C759;
+        }
+
+        button.export:hover {
+            background: #28a745;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        .schedule-container {
+            margin-top: 30px;
+        }
+
+        #scheduleCanvas {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            max-width: 100%;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .activity-list {
+            margin-top: 20px;
+        }
+
+        .activity-item {
+            background: #f8f9fa;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .activity-title {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .activity-time {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .delete-btn {
+            background: #FF3B30;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .date-selector {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .date-nav-btn {
+            background: #007AFF;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .edit-btn {
+            background: #FF9500;
+            padding: 6px 12px;
+            font-size: 14px;
+            margin-left: 8px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 450px;
+            margin: 50px auto;
+            text-align: center;
+        }
+
+        .modal input {
+            margin: 10px 0;
+        }
+
+        .category-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .category-btn {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .category-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .category-btn.selected {
+            border-width: 3px;
+            font-weight: bold;
+        }
+
+        .category-icon {
+            font-size: 20px;
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        #tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            pointer-events: none;
+            display: none;
+            z-index: 2000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            max-width: 250px;
+        }
+
+        .tooltip-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+            font-size: 15px;
+        }
+
+        .tooltip-time {
+            color: #aaa;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 1日の行動記録</h1>
+        
+        <div class="date-selector">
+            <button class="date-nav-btn" onclick="changeDate(-1)">◀ 前日</button>
+            <strong id="currentDate"></strong>
+            <button class="date-nav-btn" onclick="changeDate(1)">次日 ▶</button>
+        </div>
+
+        <div class="timer-section">
+            <div class="timer-display" id="timerDisplay">00:00:00</div>
+            <div class="timer-info" id="timerInfo">タイマー停止中</div>
+            <button id="startBtn" onclick="startTimer()">開始</button>
+            <button id="stopBtn" class="stop" onclick="stopTimer()" disabled>停止</button>
+        </div>
+
+        <div class="activity-list">
+            <h2 style="margin-bottom: 10px;">今日の記録</h2>
+            <div id="activityList"></div>
+        </div>
+    </div>
+
+    <div class="container schedule-container">
+        <h2 style="margin-bottom: 20px;">📅 1日のスケジュール表</h2>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FF6B6B;"></div>
+                <span>📚 勉強時間</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4ECDC4;"></div>
+                <span>📱 スマホ時間</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFE66D;"></div>
+                <span>🎮 遊び</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #95E1D3;"></div>
+                <span>🏠 生活</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #A8DADC;"></div>
+                <span>😴 睡眠</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #C7CEEA;"></div>
+                <span>☕ 休憩</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFDAC1;"></div>
+                <span>💼 バイト</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #B4A7D6;"></div>
+                <span>🚶 移動</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFB6B9;"></div>
+                <span>🍽️ ご飯</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #D4A5A5;"></div>
+                <span>✨ 自由時間</span>
+            </div>
+        </div>
+
+        <canvas id="scheduleCanvas" width="700" height="1200"></canvas>
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="export" onclick="exportImage()">📸 画像として保存</button>
+        </div>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <!-- Modal for title input -->
+    <div id="titleModal" class="modal">
+        <div class="modal-content">
+            <h2>活動を記録</h2>
+            <input type="text" id="activityTitle" placeholder="例: 数学の勉強" />
+            
+            <h3 style="margin-top: 20px; margin-bottom: 10px;">カテゴリーを選択</h3>
+            <div class="category-selector" id="categorySelector">
+                <button class="category-btn" onclick="selectCategory('勉強時間', this)" style="border-color: #FF6B6B;">
+                    <span class="category-icon">📚</span> 勉強時間
+                </button>
+                <button class="category-btn" onclick="selectCategory('スマホ時間', this)" style="border-color: #4ECDC4;">
+                    <span class="category-icon">📱</span> スマホ時間
+                </button>
+                <button class="category-btn" onclick="selectCategory('遊び', this)" style="border-color: #FFE66D;">
+                    <span class="category-icon">🎮</span> 遊び
+                </button>
+                <button class="category-btn" onclick="selectCategory('生活', this)" style="border-color: #95E1D3;">
+                    <span class="category-icon">🏠</span> 生活
+                </button>
+                <button class="category-btn" onclick="selectCategory('睡眠', this)" style="border-color: #A8DADC;">
+                    <span class="category-icon">😴</span> 睡眠
+                </button>
+                <button class="category-btn" onclick="selectCategory('休憩', this)" style="border-color: #C7CEEA;">
+                    <span class="category-icon">☕</span> 休憩
+                </button>
+                <button class="category-btn" onclick="selectCategory('バイト', this)" style="border-color: #FFDAC1;">
+                    <span class="category-icon">💼</span> バイト
+                </button>
+                <button class="category-btn" onclick="selectCategory('移動', this)" style="border-color: #B4A7D6;">
+                    <span class="category-icon">🚶</span> 移動
+                </button>
+                <button class="category-btn" onclick="selectCategory('ご飯', this)" style="border-color: #FFB6B9;">
+                    <span class="category-icon">🍽️</span> ご飯
+                </button>
+                <button class="category-btn" onclick="selectCategory('自由時間', this)" style="border-color: #D4A5A5;">
+                    <span class="category-icon">✨</span> 自由時間
+                </button>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button onclick="saveActivity()">保存</button>
+                <button onclick="cancelActivity()" style="background: #999;">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for editing activity -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h2>活動を編集</h2>
+            <input type="text" id="editTitle" placeholder="題名" />
+            <div style="margin: 10px 0;">
+                <label>開始時刻:</label>
+                <input type="time" id="editStartTime" style="width: auto; margin-left: 10px;" />
+            </div>
+            <div style="margin: 10px 0;">
+                <label>終了時刻:</label>
+                <input type="time" id="editEndTime" style="width: auto; margin-left: 10px;" />
+            </div>
+            
+            <h3 style="margin-top: 20px; margin-bottom: 10px;">カテゴリー</h3>
+            <div class="category-selector" id="editCategorySelector">
+                <button class="category-btn" onclick="selectEditCategory('勉強時間', this)" style="border-color: #FF6B6B;">
+                    <span class="category-icon">📚</span> 勉強時間
+                </button>
+                <button class="category-btn" onclick="selectEditCategory('スマホ時間', this)" style="border-color: #4ECDC4;">
+                    <span class="category-icon">📱</span> スマホ時間
+                </button>
+                <button class="category-btn" onclick="selectEditCategory('遊び', this)" style="border-color: #FFE66D;">
+                    <span class="category-icon">🎮</span> 遊び
+                </button>
+                <button class="category-btn" onclick="selectEditCategory('生活', this)" style="border-color: #95E1D3;">
+                    <span class="category-icon">🏠</span> 生活
+                </button>
+                <button class="category-btn" onclick="selectEditCategory('睡眠', this)" style="border-color: #A8DADC;">
+                    <span class="category-icon">😴</span> 睡眠
+                </button>
+                <button class="category-btn" onclick="selectEditCategory('休憩', this)" style="border-color: #C7CEEA;">
+                    <span class="category-icon">☕</span> 休憩
+                </button>
+                <button class="category-btn" onclick="selectEditCategory('バイト', this)" style="border-color: #FFDAC1;">
+                    <span class="category-icon">💼</span> バイト
+                </button>
+                <button class="category-btn" onclick="selectEditCategory('移動', this)" style="border-color: #B4A7D6;">
+                    <span class="category-icon">🚶</span> 移動
+                </button>
+                <button class="category-btn" onclick="selectEditCategory('ご飯', this)" style="border-color: #FFB6B9;">
+                    <span class="category-icon">🍽️</span> ご飯
+                </button>
+                <button class="category-btn" onclick="selectEditCategory('自由時間', this)" style="border-color: #D4A5A5;">
+                    <span class="category-icon">✨</span> 自由時間
+                </button>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button onclick="saveEdit()">保存</button>
+                <button onclick="cancelEdit()" style="background: #999;">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timerInterval = null;
+        let startTime = null;
+        let elapsedSeconds = 0;
+        let activities = [];
+        let currentViewDate = new Date(); // Date being viewed
+        let editingIndex = null;
+        let selectedCategory = null;
+        let selectedEditCategory = null;
+
+        // Category colors mapping
+        const categoryColors = {
+            '勉強時間': '#FF6B6B',
+            'スマホ時間': '#4ECDC4',
+            '遊び': '#FFE66D',
+            '生活': '#95E1D3',
+            '睡眠': '#A8DADC',
+            '休憩': '#C7CEEA',
+            'バイト': '#FFDAC1',
+            '移動': '#B4A7D6',
+            'ご飯': '#FFB6B9',
+            '自由時間': '#D4A5A5'
+        };
+
+        const categoryIcons = {
+            '勉強時間': '📚',
+            'スマホ時間': '📱',
+            '遊び': '🎮',
+            '生活': '🏠',
+            '睡眠': '😴',
+            '休憩': '☕',
+            'バイト': '💼',
+            '移動': '🚶',
+            'ご飯': '🍽️',
+            '自由時間': '✨'
+        };
+
+        // Select category
+        function selectCategory(category, button) {
+            selectedCategory = category;
+            document.querySelectorAll('#categorySelector .category-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            button.classList.add('selected');
+        }
+
+        // Select category for edit
+        function selectEditCategory(category, button) {
+            selectedEditCategory = category;
+            document.querySelectorAll('#editCategorySelector .category-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            button.classList.add('selected');
+        }
+
+        // Load saved activities from localStorage
+        function loadActivities() {
+            const saved = localStorage.getItem('dailyActivities');
+            if (saved) {
+                activities = JSON.parse(saved);
+            }
+            renderActivities();
+            drawSchedule();
+        }
+
+        // Save activities to localStorage
+        function saveActivities() {
+            localStorage.setItem('dailyActivities', JSON.stringify(activities));
+        }
+
+        // Get activities for a specific date
+        function getActivitiesForDate(date) {
+            const dateStr = date.toDateString();
+            return activities.filter(a => new Date(a.date).toDateString() === dateStr);
+        }
+
+        // Update current date display
+        function updateDateDisplay() {
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('currentDate').textContent = currentViewDate.toLocaleDateString('ja-JP', options);
+        }
+
+        // Change date (offset in days: -1 for previous day, +1 for next day)
+        function changeDate(offset) {
+            currentViewDate.setDate(currentViewDate.getDate() + offset);
+            updateDateDisplay();
+            renderActivities();
+            drawSchedule();
+        }
+
+        // Start timer
+        function startTimer() {
+            startTime = new Date();
+            elapsedSeconds = 0;
+            
+            // Save timer state to localStorage
+            localStorage.setItem('timerRunning', 'true');
+            localStorage.setItem('timerStartTime', startTime.toISOString());
+            
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('timerInfo').textContent = `開始時刻: ${formatTime(startTime)}`;
+            
+            // Use interval to update display, but calculate from actual time
+            timerInterval = setInterval(() => {
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        // Stop timer
+        function stopTimer() {
+            clearInterval(timerInterval);
+            
+            // Clear timer state from localStorage
+            localStorage.removeItem('timerRunning');
+            localStorage.removeItem('timerStartTime');
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            
+            // Reset category selection
+            selectedCategory = null;
+            document.querySelectorAll('#categorySelector .category-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // Show modal for title input
+            document.getElementById('titleModal').style.display = 'block';
+            document.getElementById('activityTitle').focus();
+        }
+
+        // Save activity
+        function saveActivity() {
+            const title = document.getElementById('activityTitle').value.trim();
+            if (!title) {
+                alert('題名を入力してください');
+                return;
+            }
+            
+            if (!selectedCategory) {
+                alert('カテゴリーを選択してください');
+                return;
+            }
+
+            const endTime = new Date();
+            const activity = {
+                title: title,
+                category: selectedCategory,
+                startTime: startTime.toISOString(),
+                endTime: endTime.toISOString(),
+                duration: elapsedSeconds,
+                date: startTime.toISOString() // Use start time's date
+            };
+
+            activities.push(activity);
+            saveActivities();
+            
+            // Clear timer state from localStorage
+            localStorage.removeItem('timerRunning');
+            localStorage.removeItem('timerStartTime');
+            
+            // Switch view to the activity's date if different
+            const activityDate = new Date(activity.date);
+            if (activityDate.toDateString() !== currentViewDate.toDateString()) {
+                currentViewDate = activityDate;
+                updateDateDisplay();
+            }
+            
+            renderActivities();
+            drawSchedule();
+
+            // Reset
+            document.getElementById('titleModal').style.display = 'none';
+            document.getElementById('activityTitle').value = '';
+            document.getElementById('timerDisplay').textContent = '00:00:00';
+            document.getElementById('timerInfo').textContent = 'タイマー停止中';
+            elapsedSeconds = 0;
+            selectedCategory = null;
+        }
+
+        // Cancel activity
+        function cancelActivity() {
+            // Clear timer state from localStorage
+            localStorage.removeItem('timerRunning');
+            localStorage.removeItem('timerStartTime');
+            
+            document.getElementById('titleModal').style.display = 'none';
+            document.getElementById('activityTitle').value = '';
+            document.getElementById('timerDisplay').textContent = '00:00:00';
+            document.getElementById('timerInfo').textContent = 'タイマー停止中';
+            elapsedSeconds = 0;
+            selectedCategory = null;
+        }
+
+        // Update timer display
+        function updateTimerDisplay() {
+            // Calculate elapsed time from actual start time
+            if (startTime) {
+                const now = new Date();
+                elapsedSeconds = Math.floor((now - startTime) / 1000);
+            }
+            
+            const hours = Math.floor(elapsedSeconds / 3600);
+            const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+            const seconds = elapsedSeconds % 60;
+            
+            document.getElementById('timerDisplay').textContent = 
+                `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        }
+
+        // Format time
+        function formatTime(date) {
+            return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        // Format time for input field (HH:MM)
+        function formatTimeForInput(date) {
+            return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        // Pad number
+        function pad(num) {
+            return num.toString().padStart(2, '0');
+        }
+
+        // Format duration
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            if (hours > 0) {
+                return `${hours}時間${minutes}分`;
+            }
+            return `${minutes}分`;
+        }
+
+        // Render activities list for current view date
+        function renderActivities() {
+            const listEl = document.getElementById('activityList');
+            const dateActivities = getActivitiesForDate(currentViewDate);
+            
+            if (dateActivities.length === 0) {
+                listEl.innerHTML = '<p style="color: #999; text-align: center;">この日の記録はありません</p>';
+                return;
+            }
+
+            // Sort by start time
+            dateActivities.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+
+            listEl.innerHTML = dateActivities.map((activity) => {
+                const start = new Date(activity.startTime);
+                const end = new Date(activity.endTime);
+                const globalIndex = activities.findIndex(a => 
+                    a.startTime === activity.startTime && a.title === activity.title
+                );
+                const categoryColor = categoryColors[activity.category] || '#999';
+                const categoryIcon = categoryIcons[activity.category] || '📌';
+                
+                return `
+                    <div class="activity-item" style="border-left: 4px solid ${categoryColor};">
+                        <div>
+                            <div class="activity-title">${categoryIcon} ${activity.title}</div>
+                            <div class="activity-time">
+                                ${formatTime(start)} - ${formatTime(end)} 
+                                (${formatDuration(activity.duration)})
+                                <span style="color: ${categoryColor}; font-weight: bold; margin-left: 8px;">${activity.category}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="edit-btn" onclick="editActivity(${globalIndex})">編集</button>
+                            <button class="delete-btn" onclick="deleteActivity(${globalIndex})">削除</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Edit activity
+        function editActivity(index) {
+            editingIndex = index;
+            const activity = activities[index];
+            const start = new Date(activity.startTime);
+            const end = new Date(activity.endTime);
+            
+            document.getElementById('editTitle').value = activity.title;
+            document.getElementById('editStartTime').value = formatTimeForInput(start);
+            document.getElementById('editEndTime').value = formatTimeForInput(end);
+            
+            // Set selected category
+            selectedEditCategory = activity.category;
+            document.querySelectorAll('#editCategorySelector .category-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                if (btn.textContent.includes(activity.category)) {
+                    btn.classList.add('selected');
+                }
+            });
+            
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        // Save edited activity
+        function saveEdit() {
+            const title = document.getElementById('editTitle').value.trim();
+            const startTimeStr = document.getElementById('editStartTime').value;
+            const endTimeStr = document.getElementById('editEndTime').value;
+            
+            if (!title || !startTimeStr || !endTimeStr) {
+                alert('すべての項目を入力してください');
+                return;
+            }
+            
+            if (!selectedEditCategory) {
+                alert('カテゴリーを選択してください');
+                return;
+            }
+
+            const activity = activities[editingIndex];
+            const activityDate = new Date(activity.date);
+            
+            // Parse times
+            const [startHour, startMin] = startTimeStr.split(':').map(Number);
+            const [endHour, endMin] = endTimeStr.split(':').map(Number);
+            
+            const newStart = new Date(activityDate);
+            newStart.setHours(startHour, startMin, 0, 0);
+            
+            const newEnd = new Date(activityDate);
+            newEnd.setHours(endHour, endMin, 0, 0);
+            
+            // Validate times
+            if (newEnd <= newStart) {
+                alert('終了時刻は開始時刻より後にしてください');
+                return;
+            }
+            
+            // Calculate duration
+            const duration = Math.floor((newEnd - newStart) / 1000);
+            
+            // Update activity
+            activities[editingIndex] = {
+                title: title,
+                category: selectedEditCategory,
+                startTime: newStart.toISOString(),
+                endTime: newEnd.toISOString(),
+                duration: duration,
+                date: activityDate.toISOString()
+            };
+            
+            saveActivities();
+            renderActivities();
+            drawSchedule();
+            
+            document.getElementById('editModal').style.display = 'none';
+            editingIndex = null;
+            selectedEditCategory = null;
+        }
+
+        // Cancel edit
+        function cancelEdit() {
+            document.getElementById('editModal').style.display = 'none';
+            editingIndex = null;
+            selectedEditCategory = null;
+        }
+
+        // Delete activity
+        function deleteActivity(index) {
+            if (confirm('この記録を削除しますか?')) {
+                activities.splice(index, 1);
+                saveActivities();
+                renderActivities();
+                drawSchedule();
+            }
+        }
+
+        // Draw schedule on canvas
+        function drawSchedule() {
+            const canvas = document.getElementById('scheduleCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Clear canvas
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+
+            // Settings
+            const margin = 80;
+            const chartWidth = width - margin * 2;
+            const chartHeight = height - margin * 2;
+            const hourHeight = chartHeight / 24;
+
+            // Draw background gradient
+            const gradient = ctx.createLinearGradient(0, margin, 0, height - margin);
+            gradient.addColorStop(0, '#f8f9fa');
+            gradient.addColorStop(1, '#e9ecef');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(margin, margin, chartWidth, chartHeight);
+
+            // Draw hour lines and labels
+            ctx.strokeStyle = '#dee2e6';
+            ctx.lineWidth = 1;
+            ctx.fillStyle = '#495057';
+            ctx.font = 'bold 14px -apple-system, sans-serif';
+            ctx.textAlign = 'right';
+
+            for (let hour = 0; hour <= 24; hour++) {
+                const y = margin + hour * hourHeight;
+                
+                // Draw line
+                ctx.beginPath();
+                ctx.moveTo(margin, y);
+                ctx.lineTo(width - margin, y);
+                ctx.stroke();
+
+                // Draw hour label
+                if (hour < 24) {
+                    ctx.fillText(`${pad(hour)}:00`, margin - 15, y + 5);
+                }
+                
+                // Draw half-hour line (lighter)
+                if (hour < 24) {
+                    ctx.strokeStyle = '#e9ecef';
+                    ctx.beginPath();
+                    ctx.moveTo(margin, y + hourHeight / 2);
+                    ctx.lineTo(width - margin, y + hourHeight / 2);
+                    ctx.stroke();
+                    ctx.strokeStyle = '#dee2e6';
+                }
+            }
+
+            // Get activities for current view date
+            const dateActivities = getActivitiesForDate(currentViewDate);
+
+            // Store activity positions for tooltip
+            window.activityRegions = [];
+
+            dateActivities.forEach((activity, index) => {
+                const start = new Date(activity.startTime);
+                const end = new Date(activity.endTime);
+                
+                const startHour = start.getHours() + start.getMinutes() / 60;
+                const endHour = end.getHours() + end.getMinutes() / 60;
+                
+                const y = margin + startHour * hourHeight;
+                const h = (endHour - startHour) * hourHeight;
+                
+                const color = categoryColors[activity.category] || '#999';
+                
+                // Draw shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.fillRect(margin + 14, y + 4, chartWidth - 28, h);
+                
+                // Draw activity bar with gradient
+                const barGradient = ctx.createLinearGradient(margin + 10, y, margin + 10, y + h);
+                barGradient.addColorStop(0, color);
+                barGradient.addColorStop(1, adjustColor(color, -20));
+                ctx.fillStyle = barGradient;
+                ctx.fillRect(margin + 10, y, chartWidth - 20, h);
+                
+                // Draw border
+                ctx.strokeStyle = adjustColor(color, -40);
+                ctx.lineWidth = 2;
+                ctx.strokeRect(margin + 10, y, chartWidth - 20, h);
+                
+                // Store region for tooltip
+                window.activityRegions.push({
+                    x: margin + 10,
+                    y: y,
+                    width: chartWidth - 20,
+                    height: h,
+                    activity: activity
+                });
+                
+                // Draw activity text
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 18px -apple-system, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                ctx.shadowBlur = 2;
+                
+                const textY = y + h / 2;
+                const icon = categoryIcons[activity.category] || '📌';
+                const titleText = `${icon} ${activity.title}`;
+                const timeText = `${formatTime(start)} - ${formatTime(end)}`;
+                const durationText = formatDuration(activity.duration);
+                
+                // Only draw text if there's enough space
+                if (h > 60) {
+                    ctx.fillText(titleText, margin + 25, textY - 15);
+                    ctx.font = '14px -apple-system, sans-serif';
+                    ctx.fillText(timeText, margin + 25, textY + 5);
+                    ctx.fillText(durationText, margin + 25, textY + 25);
+                } else if (h > 35) {
+                    ctx.font = '16px -apple-system, sans-serif';
+                    ctx.fillText(titleText, margin + 25, textY - 5);
+                    ctx.font = '12px -apple-system, sans-serif';
+                    ctx.fillText(timeText, margin + 25, textY + 12);
+                } else if (h > 20) {
+                    ctx.font = '14px -apple-system, sans-serif';
+                    ctx.fillText(titleText, margin + 25, textY + 5);
+                }
+                
+                ctx.shadowBlur = 0;
+            });
+
+            // Draw title with background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, 50);
+            ctx.fillStyle = '#212529';
+            ctx.font = 'bold 22px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            const dateStr = currentViewDate.toLocaleDateString('ja-JP', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                weekday: 'long'
+            });
+            ctx.fillText(`📅 ${dateStr} の行動記録`, width / 2, 32);
+        }
+
+        // Helper function to adjust color brightness
+        function adjustColor(color, amount) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+            const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amount));
+            const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount));
+            return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+        }
+
+        // Canvas mouse move for tooltip
+        const canvas = document.getElementById('scheduleCanvas');
+        const tooltip = document.getElementById('tooltip');
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            let found = false;
+            for (const region of window.activityRegions || []) {
+                if (x >= region.x && x <= region.x + region.width &&
+                    y >= region.y && y <= region.y + region.height) {
+                    
+                    const start = new Date(region.activity.startTime);
+                    const end = new Date(region.activity.endTime);
+                    const icon = categoryIcons[region.activity.category] || '📌';
+                    
+                    tooltip.innerHTML = `
+                        <div class="tooltip-title">${icon} ${region.activity.title}</div>
+                        <div class="tooltip-time">${formatTime(start)} - ${formatTime(end)}</div>
+                        <div style="margin-top: 4px;">${formatDuration(region.activity.duration)}</div>
+                        <div style="margin-top: 4px; color: ${categoryColors[region.activity.category]};">
+                            ${region.activity.category}
+                        </div>
+                    `;
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (e.clientX + 15) + 'px';
+                    tooltip.style.top = (e.clientY + 15) + 'px';
+                    found = true;
+                    canvas.style.cursor = 'pointer';
+                    break;
+                }
+            }
+            
+            if (!found) {
+                tooltip.style.display = 'none';
+                canvas.style.cursor = 'default';
+            }
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+        });
+
+        // Export schedule as image
+        function exportImage() {
+            const canvas = document.getElementById('scheduleCanvas');
+            const link = document.createElement('a');
+            const filename = `行動記録_${currentViewDate.getFullYear()}${pad(currentViewDate.getMonth()+1)}${pad(currentViewDate.getDate())}.png`;
+            
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Initialize
+        updateDateDisplay();
+        loadActivities();
+        
+        // Restore timer state if it was running
+        function restoreTimerState() {
+            const timerRunning = localStorage.getItem('timerRunning');
+            const timerStartTimeStr = localStorage.getItem('timerStartTime');
+            
+            if (timerRunning === 'true' && timerStartTimeStr) {
+                startTime = new Date(timerStartTimeStr);
+                
+                // Calculate elapsed time
+                const now = new Date();
+                elapsedSeconds = Math.floor((now - startTime) / 1000);
+                
+                // Update UI
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('timerInfo').textContent = `開始時刻: ${formatTime(startTime)}`;
+                
+                // Start interval to update display
+                timerInterval = setInterval(() => {
+                    updateTimerDisplay();
+                }, 1000);
+                
+                // Update display immediately
+                updateTimerDisplay();
+            }
+        }
+        
+        restoreTimerState();
+    </script>
+</body>
+</html>
