@@ -1,0 +1,14 @@
+# 画像ファイル
+*.jpg
+*.jpeg
+*.png
+*.gif
+
+# システムファイル
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# その他の一時ファイル
+*.tmp
+*.log
