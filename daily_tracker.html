@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>行動記録</title>
+  <style>
+    :root {
+      --primary: #007AFF;
+      --danger:  #FF3B30;
+      --success: #34C759;
+      --warning: #FF9500;
+      --bg:      #F2F2F7;
+      --card:    #FFFFFF;
+      --text:    #1C1C1E;
+      --sub:     #6C6C70;
+      --border:  #E5E5EA;
+      --r:       12px;
+      --max:     480px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+      background: var(--bg); color: var(--text);
+      max-width: var(--max); margin: 0 auto;
+    }
+
+    /* ── Loading overlay ── */
+    #loadingOverlay {
+      position: fixed; inset: 0; background: rgba(242,242,247,0.9);
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    }
+    .spinner {
+      width: 42px; height: 42px; border: 3px solid var(--border);
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Login page ── */
+    #loginPage {
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100vh; padding: 32px 20px;
+    }
+    .login-logo  { font-size: 60px; margin-bottom: 6px; }
+    .login-title { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+    .login-sub   { font-size: 14px; color: var(--sub); margin-bottom: 32px; }
+    .login-card  {
+      background: var(--card); border-radius: 20px;
+      padding: 24px 20px; width: 100%; max-width: 420px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    }
+    .login-tabs  { display: flex; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
+    .login-tab   {
+      flex: 1; padding: 10px; text-align: center;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      color: var(--sub); border-bottom: 2px solid transparent;
+      margin-bottom: -2px; transition: all .2s;
+    }
+    .login-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .login-err {
+      background: #FFE5E5; color: var(--danger); border-radius: 10px;
+      padding: 10px 14px; font-size: 13px; margin-bottom: 12px; display: none;
+    }
+    .pass-wrap { position: relative; margin-bottom: 10px; }
+    .pass-wrap .inp { margin-bottom: 0; padding-right: 44px; }
+    .pass-eye {
+      position: absolute; right: 12px; top: 50%;
+      transform: translateY(-50%); cursor: pointer; font-size: 18px; color: var(--sub);
+    }
+    .login-hint { font-size: 12px; color: var(--sub); text-align: center; margin-top: 14px; line-height: 1.6; }
+
+    /* ── Header ── */
+    .header {
+      background: rgba(255,255,255,0.92); backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px); padding: 12px 14px 10px;
+      position: sticky; top: 0; z-index: 100;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .header-title { font-size: 18px; font-weight: 700; }
+    .header-right { display: flex; gap: 6px; align-items: center; }
+    .sync-dot {
+      font-size: 11px; font-weight: 600; padding: 3px 9px;
+      border-radius: 20px; transition: all .3s;
+    }
+    .sync-ok  { background: #E8F8EF; color: var(--success); }
+    .sync-ing { background: #FFF3E0; color: var(--warning); }
+    .sync-err { background: #FFE5E5; color: var(--danger); }
+    .hdr-btn {
+      font-size: 12px; padding: 5px 11px; border-radius: 20px;
+      background: var(--bg); color: var(--sub); border: none; cursor: pointer; font-weight: 600;
+    }
+
+    /* ── Date bar ── */
+    .date-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; margin: 12px 16px 0;
+      background: var(--card); border-radius: var(--r);
+    }
+    .date-text { font-size: 15px; font-weight: 600; }
+    .date-nav {
+      width: 34px; height: 34px; border: none; border-radius: 50%;
+      background: var(--bg); font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Section card ── */
+    .card { background: var(--card); border-radius: var(--r); margin: 12px 16px 0; overflow: hidden; }
+    .sec-label {
+      font-size: 12px; font-weight: 600; color: var(--sub);
+      text-transform: uppercase; letter-spacing: 0.6px; padding: 14px 16px 4px;
+    }
+
+    /* ── Timer ── */
+    .timer-display {
+      font-size: 58px; font-weight: 700; text-align: center;
+      color: var(--primary); padding: 20px 16px 6px;
+      font-variant-numeric: tabular-nums; letter-spacing: -2px;
+    }
+    .timer-info { text-align: center; font-size: 13px; color: var(--sub); padding-bottom: 4px; }
+    .timer-btns { display: flex; gap: 10px; padding: 14px 16px; }
+
+    /* ── Buttons ── */
+    .btn {
+      flex: 1; padding: 14px 12px; border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity .15s, transform .1s;
+    }
+    .btn:active:not(:disabled) { transform: scale(0.97); opacity: 0.85; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-primary   { background: var(--primary); color: #fff; }
+    .btn-danger    { background: var(--danger);  color: #fff; }
+    .btn-success   { background: var(--success); color: #fff; }
+    .btn-secondary { background: var(--bg);      color: var(--text); }
+    .btn-sm { flex: none; padding: 8px 14px; font-size: 13px; }
+
+    /* ── Activity list ── */
+    .act-item {
+      display: flex; align-items: center;
+      padding: 11px 14px; border-bottom: 1px solid var(--border); gap: 10px;
+    }
+    .act-item:last-child { border-bottom: none; }
+    .act-bar  { width: 4px; height: 38px; border-radius: 2px; flex-shrink: 0; }
+    .act-info { flex: 1; min-width: 0; }
+    .act-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .act-meta  { font-size: 11px; color: var(--sub); margin-top: 2px; }
+    .act-actions { display: flex; gap: 6px; }
+    .icon-btn {
+      width: 30px; height: 30px; border: none; border-radius: 7px;
+      cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center;
+    }
+    .empty { text-align: center; padding: 28px 16px; color: var(--sub); font-size: 13px; }
+
+    /* ── Category grid ── */
+    .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 10px 14px; }
+    .cat-btn {
+      display: flex; align-items: center; gap: 8px; padding: 11px 12px;
+      border: 2px solid transparent; border-radius: 10px; background: var(--bg);
+      cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s; text-align: left;
+    }
+    .cat-btn.sel { font-weight: 700; }
+    .cat-icon { font-size: 18px; flex-shrink: 0; }
+    .cat-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Bottom nav ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: var(--max);
+      background: rgba(255,255,255,0.94); backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--border);
+      display: none; z-index: 200;
+    }
+    .nav-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 8px 4px 10px; cursor: pointer; border: none; background: transparent;
+      font-size: 9px; color: var(--sub); gap: 2px; transition: color .2s;
+    }
+    .nav-btn.active { color: var(--primary); }
+    .nav-icon { font-size: 22px; }
+
+    /* ── Pages ── */
+    .page { display: none; }
+    .page.active { display: block; }
+    #mainApp { display: none; padding-bottom: 76px; }
+
+    /* ── Modal (bottom sheet) ── */
+    .modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45); z-index: 500;
+      align-items: flex-end; justify-content: center;
+    }
+    .modal.open { display: flex; }
+    .sheet {
+      background: var(--card); border-radius: 20px 20px 0 0;
+      width: 100%; max-width: var(--max); padding: 16px 18px 40px;
+      max-height: 92vh; overflow-y: auto;
+    }
+    .handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 14px; }
+    .modal-row { display: flex; gap: 8px; margin-top: 10px; }
+
+    /* ── Form inputs ── */
+    .inp {
+      width: 100%; padding: 12px 13px; border: 1.5px solid var(--border);
+      border-radius: 10px; font-size: 16px; outline: none; margin-bottom: 10px;
+      background: var(--bg); transition: border-color .2s;
+    }
+    .inp:focus { border-color: var(--primary); background: #fff; }
+    .inp-label { font-size: 12px; color: var(--sub); margin-bottom: 4px; font-weight: 500; }
+    .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+
+    /* ── Settings rows ── */
+    .set-row {
+      display: flex; align-items: center;
+      padding: 13px 16px; border-bottom: 1px solid var(--border); gap: 12px;
+    }
+    .set-row:last-child { border-bottom: none; }
+    .set-icon  { font-size: 20px; width: 30px; text-align: center; }
+    .set-label { flex: 1; font-size: 15px; }
+
+    /* ── Canvas ── */
+    #schedCanvas { width: 100%; display: block; }
+    .legend-wrap { padding: 8px 16px 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .legend-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    }
+
+    /* ── Tooltip ── */
+    #tooltip {
+      position: fixed; background: rgba(0,0,0,0.82); color: #fff;
+      padding: 9px 13px; border-radius: 10px; font-size: 12px;
+      pointer-events: none; display: none; z-index: 999; max-width: 180px; line-height: 1.5;
+    }
+
+    /* ── Color swatch ── */
+    .swatch-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .swatch {
+      width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+      border: 3px solid transparent; transition: border-color .15s;
+    }
+    .swatch.sel { border-color: var(--text); }
+  </style>
+</head>
+<body>
+
+<!-- ===== LOADING ===== -->
+<div id="loadingOverlay"><div class="spinner"></div></div>
+
+<!-- ===== LOGIN PAGE ===== -->
+<div id="loginPage">
+  <div class="login-logo">📊</div>
+  <div class="login-title">行動記録</div>
+  <div class="login-sub">毎日の活動を記録・PC&スマホで同期</div>
+
+  <div class="login-card">
+    <div class="login-tabs">
+      <div class="login-tab active" id="tab-login"    onclick="switchTab('login')">ログイン</div>
+      <div class="login-tab"        id="tab-register" onclick="switchTab('register')">新規登録</div>
+    </div>
+    <div id="loginErr" class="login-err"></div>
+    <div class="inp-label">メールアドレス</div>
+    <input class="inp" type="email" id="loginEmail" placeholder="example@email.com" autocomplete="email">
+    <div class="inp-label">パスワード</div>
+    <div class="pass-wrap">
+      <input class="inp" type="password" id="loginPassword" placeholder="6文字以上" autocomplete="current-password">
+      <span class="pass-eye" onclick="togglePass()">👁️</span>
+    </div>
+    <div id="btnLogin">
+      <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="doLogin()">ログイン</button>
+    </div>
+    <div id="btnRegister" style="display:none;">
+      <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="doRegister()">アカウントを作成</button>
+    </div>
+    <p class="login-hint">ログインするとPCとスマホで自動同期されます</p>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="mainApp">
+
+  <!-- HEADER -->
+  <header class="header">
+    <span class="header-title">📊 行動記録</span>
+    <div class="header-right">
+      <span id="syncBadge" class="sync-dot sync-ok">✓ 同期済</span>
+      <button class="hdr-btn" onclick="openModal('dataModal')">💾</button>
+      <button class="hdr-btn" id="logoutBtn" onclick="doLogout()" title="ログアウト">⏏ 退出</button>
+    </div>
+  </header>
+
+  <!-- PAGE: TIMER -->
+  <div class="page active" id="page-timer">
+    <div class="date-bar">
+      <button class="date-nav" onclick="changeDate(-1)">◀</button>
+      <span class="date-text" id="dateText"></span>
+      <button class="date-nav" onclick="changeDate(1)">▶</button>
+    </div>
+    <div class="card">
+      <div class="timer-display" id="timerDisplay">00:00:00</div>
+      <div class="timer-info" id="timerInfo">タイマー停止中</div>
+      <div class="timer-btns">
+        <button class="btn btn-primary" id="startBtn" onclick="startTimer()">▶ 開始</button>
+        <button class="btn btn-danger"  id="stopBtn"  onclick="stopTimer()" disabled>■ 停止</button>
+      </div>
+    </div>
+    <div class="sec-label">今日の記録</div>
+    <div class="card" id="actList"></div>
+  </div>
+
+  <!-- PAGE: SCHEDULE -->
+  <div class="page" id="page-schedule">
+    <div class="date-bar">
+      <button class="date-nav" onclick="changeDate(-1)">◀</button>
+      <span class="date-text" id="dateText2"></span>
+      <button class="date-nav" onclick="changeDate(1)">▶</button>
+    </div>
+    <div class="card" style="margin-top:12px; padding:10px;">
+      <canvas id="schedCanvas"></canvas>
+    </div>
+    <div class="legend-wrap" id="legendWrap"></div>
+    <div style="padding:0 16px 16px; text-align:center;">
+      <button class="btn btn-success" onclick="exportImg()" style="flex:none; padding:13px 32px;">📸 画像として保存</button>
+    </div>
+  </div>
+
+  <!-- PAGE: CATEGORIES -->
+  <div class="page" id="page-categories">
+    <div class="sec-label">カテゴリー管理</div>
+    <div class="card" id="catManageList"></div>
+    <div style="padding:0 16px; margin-top:12px;">
+      <button class="btn btn-primary" onclick="openAddCat()">＋ カテゴリーを追加</button>
+    </div>
+  </div>
+
+</div><!-- /#mainApp -->
+
+<!-- ===== BOTTOM NAV ===== -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-btn active" id="nav-timer"      onclick="showPage('timer')">
+    <span class="nav-icon">⏱️</span>タイマー
+  </button>
+  <button class="nav-btn" id="nav-schedule"   onclick="showPage('schedule')">
+    <span class="nav-icon">📅</span>スケジュール
+  </button>
+  <button class="nav-btn" id="nav-categories" onclick="showPage('categories')">
+    <span class="nav-icon">🏷️</span>カテゴリー
+  </button>
+</nav>
+
+<!-- ===== MODAL: Save activity ===== -->
+<div class="modal" id="saveModal">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="modal-title">活動を記録</div>
+    <div class="inp-label">タイトル</div>
+    <input class="inp" type="text" id="actTitle" placeholder="例: 数学の勉強">
+    <div class="inp-label" style="margin-top:4px;">カテゴリー</div>
+    <div class="cat-grid" id="catSel"></div>
+    <div class="modal-row">
+      <button class="btn btn-secondary" onclick="cancelSave()">キャンセル</button>
+      <button class="btn btn-primary"   onclick="saveAct()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Edit activity ===== -->
+<div class="modal" id="editModal">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="modal-title">活動を編集</div>
+    <div class="inp-label">タイトル</div>
+    <input class="inp" type="text" id="editTitle" placeholder="タイトル">
+    <div class="time-row">
+      <div>
+        <div class="inp-label">開始時刻</div>
+        <input class="inp" type="time" id="editStart" style="margin-bottom:0;">
+      </div>
+      <div>
+        <div class="inp-label">終了時刻</div>
+        <input class="inp" type="time" id="editEnd" style="margin-bottom:0;">
+      </div>
+    </div>
+    <div class="inp-label" style="margin-top:10px;">カテゴリー</div>
+    <div class="cat-grid" id="catSelEdit"></div>
+    <div class="modal-row">
+      <button class="btn btn-secondary" onclick="closeModal('editModal')">キャンセル</button>
+      <button class="btn btn-primary"   onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Add category ===== -->
+<div class="modal" id="addCatModal">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="modal-title">カテゴリーを追加</div>
+    <div class="inp-label">絵文字 (1文字)</div>
+    <input class="inp" type="text" id="newEmoji" placeholder="例: 📖" maxlength="2">
+    <div class="inp-label">カテゴリー名</div>
+    <input class="inp" type="text" id="newCatName" placeholder="例: 読書">
+    <div class="inp-label">色を選択</div>
+    <div class="swatch-row" id="swatchRow"></div>
+    <div class="modal-row">
+      <button class="btn btn-secondary" onclick="closeModal('addCatModal')">キャンセル</button>
+      <button class="btn btn-primary"   onclick="addCat()">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Data management ===== -->
+<div class="modal" id="dataModal">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="modal-title">💾 データ管理</div>
+    <p style="font-size:13px; color:var(--sub); margin-bottom:14px;">
+      データはクラウドに自動同期されます。<br>同じアカウントでログインすると PC・スマホで共有できます。
+    </p>
+    <div class="card" style="margin:0 0 12px;">
+      <div class="set-row">
+        <span class="set-icon">📤</span>
+        <span class="set-label">データをエクスポート</span>
+        <button class="btn btn-secondary btn-sm" onclick="exportData()">保存</button>
+      </div>
+      <div class="set-row">
+        <span class="set-icon">📥</span>
+        <span class="set-label">データをインポート</span>
+        <button class="btn btn-secondary btn-sm" onclick="importData()">読込</button>
+      </div>
+      <div class="set-row">
+        <span class="set-icon">🗑️</span>
+        <span class="set-label" style="color:var(--danger);">全データを削除</span>
+        <button class="btn btn-danger btn-sm" onclick="clearAll()">削除</button>
+      </div>
+    </div>
+    <button class="btn btn-secondary" onclick="closeModal('dataModal')">閉じる</button>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+<input type="file" id="importFile" accept=".json" style="display:none;" onchange="handleImport(event)">
+
+<!-- ================================================================
+  Firebase SDK (ESM via CDN)
+  ⚠️ 下の firebaseConfig を自分のFirebaseプロジェクトの値に書き換えてください
+  https://console.firebase.google.com/ → プロジェクト設定 → マイアプリ
+================================================================ -->
+<script type="module">
+import { initializeApp }                                   from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
+import { getAuth, createUserWithEmailAndPassword,
+         signInWithEmailAndPassword, signOut,
+         onAuthStateChanged }                              from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
+import { getFirestore, doc, setDoc, onSnapshot }           from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
+
+// ============================================================
+//  ⚠️ Firebase の設定 (要書き換え)
+//  Firebase Console → プロジェクト設定 → アプリを追加(Web) で取得
+// ============================================================
+const firebaseConfig = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+
+// ============================================================
+//  CONSTANTS
+// ============================================================
+const PRESET_COLORS = [
+  '#FF6B6B','#FF9F43','#FFE66D','#A8DADC','#4ECDC4',
+  '#95E1D3','#007AFF','#B4A7D6','#FFB6B9','#D4A5A5',
+  '#C7CEEA','#FFDAC1','#34C759','#5856D6','#FF3B30'
+];
+const DEFAULT_CATS = [
+  { name:'勉強時間', emoji:'📚', color:'#FF6B6B' },
+  { name:'スマホ時間',emoji:'📱', color:'#4ECDC4' },
+  { name:'遊び',     emoji:'🎮', color:'#FFE66D' },
+  { name:'生活',     emoji:'🏠', color:'#95E1D3' },
+  { name:'睡眠',     emoji:'😴', color:'#A8DADC' },
+  { name:'休憩',     emoji:'☕', color:'#C7CEEA' },
+  { name:'バイト',   emoji:'💼', color:'#FFDAC1' },
+  { name:'移動',     emoji:'🚶', color:'#B4A7D6' },
+  { name:'ご飯',     emoji:'🍽️', color:'#FFB6B9' },
+  { name:'自由時間', emoji:'✨', color:'#D4A5A5' },
+];
+
+// ============================================================
+//  STATE
+// ============================================================
+let fbAuth, fbDb, currentUser = null, unsubscribe = null;
+let acts = [], cats = [];
+let viewDate = new Date();
+let timerIv = null, timerStart = null, timerSec = 0;
+let editIdx = null, selCat = null, selEditCat = null, selColor = PRESET_COLORS[0];
+let actRegions = [];
+const isFirebaseConfigured = () => firebaseConfig.apiKey !== 'YOUR_API_KEY';
+
+// ============================================================
+//  FIREBASE INIT
+// ============================================================
+function boot() {
+  if (!isFirebaseConfigured()) {
+    // Firebase未設定 → ローカルモードで起動
+    startLocalMode();
+    return;
+  }
+  try {
+    const app = initializeApp(firebaseConfig);
+    fbAuth = getAuth(app);
+    fbDb   = getFirestore(app);
+    onAuthStateChanged(fbAuth, user => {
+      hideLoading();
+      if (user) {
+        currentUser = user;
+        document.getElementById('logoutBtn').title = user.email;
+        showApp();
+        subscribeCloud();
+      } else {
+        currentUser = null;
+        if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+        showLogin();
+      }
+    });
+  } catch(e) {
+    console.error(e);
+    startLocalMode();
+  }
+}
+
+function startLocalMode() {
+  hideLoading();
+  acts = JSON.parse(localStorage.getItem('acts_v3') || '[]');
+  cats = JSON.parse(localStorage.getItem('cats_v3') || 'null') || structuredClone(DEFAULT_CATS);
+  const badge = document.getElementById('syncBadge');
+  badge.textContent = '⚠️ ローカル'; badge.className = 'sync-dot sync-err';
+  document.getElementById('logoutBtn').style.display = 'none';
+  showApp();
+}
+
+function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
+function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
+
+function showLogin() {
+  document.getElementById('loginPage').style.display  = 'flex';
+  document.getElementById('mainApp').style.display    = 'none';
+  document.getElementById('bottomNav').style.display  = 'none';
+}
+function showApp() {
+  document.getElementById('loginPage').style.display  = 'none';
+  document.getElementById('mainApp').style.display    = 'block';
+  document.getElementById('bottomNav').style.display  = 'flex';
+  initUI();
+}
+
+// ============================================================
+//  FIRESTORE SYNC
+// ============================================================
+function subscribeCloud() {
+  setSyncStatus('ing');
+  const ref = doc(fbDb, 'users', currentUser.uid);
+  unsubscribe = onSnapshot(ref, snap => {
+    if (snap.exists()) {
+      const d = snap.data();
+      acts = d.acts || [];
+      cats = (d.cats && d.cats.length) ? d.cats : structuredClone(DEFAULT_CATS);
+    } else {
+      acts = []; cats = structuredClone(DEFAULT_CATS);
+      saveCloud(); // 初回：デフォルト保存
+    }
+    setSyncStatus('ok');
+    renderActs(); renderCatManage();
+    if (document.getElementById('page-schedule').classList.contains('active')) drawSched();
+  }, err => { console.error(err); setSyncStatus('err'); });
+}
+
+async function saveCloud() {
+  if (!currentUser || !fbDb) {
+    // ローカル保存
+    localStorage.setItem('acts_v3', JSON.stringify(acts));
+    localStorage.setItem('cats_v3', JSON.stringify(cats));
+    return;
+  }
+  setSyncStatus('ing');
+  try {
+    await setDoc(doc(fbDb, 'users', currentUser.uid), { acts, cats });
+    setSyncStatus('ok');
+  } catch(e) { console.error(e); setSyncStatus('err'); }
+}
+
+function setSyncStatus(s) {
+  const el = document.getElementById('syncBadge');
+  if (s === 'ok')  { el.textContent = '✓ 同期済';  el.className = 'sync-dot sync-ok'; }
+  if (s === 'ing') { el.textContent = '⟳ 同期中';  el.className = 'sync-dot sync-ing'; }
+  if (s === 'err') { el.textContent = '✗ エラー';  el.className = 'sync-dot sync-err'; }
+}
+
+function save() { saveCloud(); }
+
+// ============================================================
+//  AUTH UI  (window 経由でインラインonclick から呼ぶ)
+// ============================================================
+window.switchTab = function(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('tab-login').classList.toggle('active', isLogin);
+  document.getElementById('tab-register').classList.toggle('active', !isLogin);
+  document.getElementById('btnLogin').style.display    = isLogin ? 'block' : 'none';
+  document.getElementById('btnRegister').style.display = isLogin ? 'none'  : 'block';
+  document.getElementById('loginErr').style.display = 'none';
+};
+
+window.togglePass = function() {
+  const el = document.getElementById('loginPassword');
+  el.type = el.type === 'password' ? 'text' : 'password';
+};
+
+const ERR_MAP = {
+  'auth/user-not-found':     'メールアドレスが見つかりません',
+  'auth/wrong-password':     'パスワードが間違っています',
+  'auth/invalid-credential': 'メールアドレスまたはパスワードが間違っています',
+  'auth/email-already-in-use':'このメールは既に登録されています',
+  'auth/weak-password':      'パスワードは6文字以上にしてください',
+  'auth/invalid-email':      '有効なメールアドレスを入力してください',
+  'auth/too-many-requests':  'しばらく待ってから再試行してください',
+};
+function showErr(msg) {
+  const code = (msg.match(/\((auth\/[^)]+)\)/) || [])[1] || '';
+  const el = document.getElementById('loginErr');
+  el.textContent = ERR_MAP[code] || 'エラーが発生しました。再度お試しください。';
+  el.style.display = 'block';
+}
+
+window.doLogin = async function() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPassword').value;
+  if (!email || !pass) { showErr('(auth/invalid-email)'); return; }
+  showLoading();
+  document.getElementById('loginErr').style.display = 'none';
+  try { await signInWithEmailAndPassword(fbAuth, email, pass); }
+  catch(e) { hideLoading(); showErr(e.message); }
+};
+
+window.doRegister = async function() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPassword').value;
+  if (!email || !pass) { showErr('(auth/invalid-email)'); return; }
+  showLoading();
+  document.getElementById('loginErr').style.display = 'none';
+  try { await createUserWithEmailAndPassword(fbAuth, email, pass); }
+  catch(e) { hideLoading(); showErr(e.message); }
+};
+
+window.doLogout = async function() {
+  if (!confirm('ログアウトしますか？')) return;
+  await signOut(fbAuth);
+  acts = []; cats = [];
+};
+
+// ============================================================
+//  HELPERS
+// ============================================================
+function pad(n)     { return String(n).padStart(2,'0'); }
+function fmtDate(d) { return d.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'}); }
+function fmtTime(d) { return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function fmtDur(sec){ const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60); return h>0?`${h}時間${m}分`:`${m}分`; }
+function dateKey(d) { return d.toDateString(); }
+function actsForDate(d) { return acts.filter(a => new Date(a.date).toDateString() === dateKey(d)); }
+function getCat(name)   { return cats.find(c=>c.name===name) || {name,emoji:'📌',color:'#999'}; }
+
+// ============================================================
+//  DATE NAV
+// ============================================================
+window.changeDate = function(n) {
+  viewDate = new Date(viewDate); viewDate.setDate(viewDate.getDate()+n);
+  updateDateUI(); renderActs();
+  if (document.getElementById('page-schedule').classList.contains('active')) drawSched();
+};
+function updateDateUI() {
+  const t = fmtDate(viewDate);
+  document.getElementById('dateText').textContent  = t;
+  document.getElementById('dateText2').textContent = t;
+}
+
+// ============================================================
+//  PAGE NAV
+// ============================================================
+window.showPage = function(name) {
+  ['timer','schedule','categories'].forEach(n => {
+    document.getElementById('page-'+n).classList.toggle('active', n===name);
+    document.getElementById('nav-'+n).classList.toggle('active', n===name);
+  });
+  if (name === 'schedule')   drawSched();
+  if (name === 'categories') renderCatManage();
+};
+
+// ============================================================
+//  MODAL
+// ============================================================
+window.openModal  = function(id) { document.getElementById(id).classList.add('open'); };
+window.closeModal = function(id) { document.getElementById(id).classList.remove('open'); };
+
+// ============================================================
+//  TIMER
+// ============================================================
+window.startTimer = function() {
+  timerStart = new Date(); timerSec = 0;
+  localStorage.setItem('timerRunning','true');
+  localStorage.setItem('timerStart', timerStart.toISOString());
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('stopBtn').disabled  = false;
+  document.getElementById('timerInfo').textContent = `開始: ${fmtTime(timerStart)}`;
+  timerIv = setInterval(tickTimer, 1000);
+};
+window.stopTimer = function() {
+  clearInterval(timerIv);
+  localStorage.removeItem('timerRunning'); localStorage.removeItem('timerStart');
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('stopBtn').disabled  = true;
+  selCat = null;
+  document.getElementById('actTitle').value = '';
+  buildCatSel('catSel','selCat',null);
+  openModal('saveModal');
+  setTimeout(() => document.getElementById('actTitle').focus(), 300);
+};
+function tickTimer() {
+  if (timerStart) timerSec = Math.floor((Date.now()-timerStart)/1000);
+  const h=Math.floor(timerSec/3600),m=Math.floor((timerSec%3600)/60),s=timerSec%60;
+  document.getElementById('timerDisplay').textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+function restoreTimer() {
+  if (localStorage.getItem('timerRunning')==='true') {
+    timerStart = new Date(localStorage.getItem('timerStart'));
+    timerSec   = Math.floor((Date.now()-timerStart)/1000);
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('stopBtn').disabled  = false;
+    document.getElementById('timerInfo').textContent = `開始: ${fmtTime(timerStart)}`;
+    timerIv = setInterval(tickTimer,1000); tickTimer();
+  }
+}
+
+// ============================================================
+//  SAVE ACTIVITY
+// ============================================================
+window.saveAct = function() {
+  const title = document.getElementById('actTitle').value.trim();
+  if (!title)  { alert('タイトルを入力してください'); return; }
+  if (!selCat) { alert('カテゴリーを選択してください'); return; }
+  const end = new Date();
+  acts.push({ title, category:selCat, startTime:timerStart.toISOString(),
+              endTime:end.toISOString(), duration:timerSec, date:timerStart.toISOString() });
+  save(); closeModal('saveModal');
+  if (new Date(timerStart).toDateString() !== viewDate.toDateString()) {
+    viewDate = new Date(timerStart); updateDateUI();
+  }
+  renderActs();
+  timerSec=0; timerStart=null;
+  document.getElementById('timerDisplay').textContent = '00:00:00';
+  document.getElementById('timerInfo').textContent = 'タイマー停止中';
+};
+window.cancelSave = function() {
+  localStorage.removeItem('timerRunning'); localStorage.removeItem('timerStart');
+  closeModal('saveModal');
+  document.getElementById('timerDisplay').textContent = '00:00:00';
+  document.getElementById('timerInfo').textContent = 'タイマー停止中';
+  timerSec=0; timerStart=null;
+};
+
+// ============================================================
+//  EDIT / DELETE ACTIVITY
+// ============================================================
+window.editAct = function(idx) {
+  editIdx = idx;
+  const a=acts[idx], s=new Date(a.startTime), e=new Date(a.endTime);
+  document.getElementById('editTitle').value = a.title;
+  document.getElementById('editStart').value = `${pad(s.getHours())}:${pad(s.getMinutes())}`;
+  document.getElementById('editEnd').value   = `${pad(e.getHours())}:${pad(e.getMinutes())}`;
+  selEditCat = a.category;
+  buildCatSel('catSelEdit','selEditCat',a.category);
+  openModal('editModal');
+};
+window.saveEdit = function() {
+  const title=document.getElementById('editTitle').value.trim();
+  const sStr=document.getElementById('editStart').value;
+  const eStr=document.getElementById('editEnd').value;
+  if (!title||!sStr||!eStr||!selEditCat) { alert('すべて入力してください'); return; }
+  const base=new Date(acts[editIdx].date);
+  const [sh,sm]=sStr.split(':').map(Number), [eh,em]=eStr.split(':').map(Number);
+  const ns=new Date(base); ns.setHours(sh,sm,0,0);
+  const ne=new Date(base); ne.setHours(eh,em,0,0);
+  if (ne<=ns) { alert('終了時刻は開始より後にしてください'); return; }
+  acts[editIdx]={...acts[editIdx],title,category:selEditCat,
+    startTime:ns.toISOString(),endTime:ne.toISOString(),duration:Math.floor((ne-ns)/1000)};
+  save(); closeModal('editModal'); renderActs();
+  if (document.getElementById('page-schedule').classList.contains('active')) drawSched();
+};
+window.deleteAct = function(idx) {
+  if (!confirm('この記録を削除しますか？')) return;
+  acts.splice(idx,1); save(); renderActs();
+  if (document.getElementById('page-schedule').classList.contains('active')) drawSched();
+};
+
+// ============================================================
+//  RENDER ACTIVITIES
+// ============================================================
+function renderActs() {
+  const el   = document.getElementById('actList');
+  const list = actsForDate(viewDate).sort((a,b)=>new Date(a.startTime)-new Date(b.startTime));
+  if (!list.length) { el.innerHTML='<div class="empty">📭 この日の記録はありません</div>'; return; }
+  el.innerHTML = list.map(a => {
+    const gi  = acts.findIndex(x=>x.startTime===a.startTime&&x.title===a.title);
+    const cat = getCat(a.category);
+    const s=new Date(a.startTime),e=new Date(a.endTime);
+    return `<div class="act-item">
+      <div class="act-bar" style="background:${cat.color}"></div>
+      <div class="act-info">
+        <div class="act-title">${cat.emoji} ${a.title}</div>
+        <div class="act-meta">${fmtTime(s)}〜${fmtTime(e)} · ${fmtDur(a.duration)} · ${a.category}</div>
+      </div>
+      <div class="act-actions">
+        <button class="icon-btn" style="background:#FFF3E0" onclick="editAct(${gi})">✏️</button>
+        <button class="icon-btn" style="background:#FFF0F0" onclick="deleteAct(${gi})">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+//  CATEGORY SELECTOR
+// ============================================================
+function buildCatSel(containerId, stateVar, selected) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = cats.map(c => {
+    const isSel = c.name===selected;
+    return `<button class="cat-btn ${isSel?'sel':''}"
+      style="border-color:${isSel?c.color:'transparent'};background:${isSel?c.color+'22':'var(--bg)'};"
+      onclick="pickCat('${containerId}','${c.name.replace(/'/g,"\\'")}')">
+      <span class="cat-icon">${c.emoji}</span>
+      <span class="cat-name">${c.name}</span>
+    </button>`;
+  }).join('');
+}
+window.pickCat = function(containerId, name) {
+  if (containerId==='catSel')     { selCat=name;     buildCatSel('catSel','selCat',name); }
+  else                            { selEditCat=name;  buildCatSel('catSelEdit','selEditCat',name); }
+};
+
+// ============================================================
+//  CATEGORY MANAGEMENT
+// ============================================================
+function renderCatManage() {
+  const el = document.getElementById('catManageList');
+  el.innerHTML = cats.map((c,i) => `
+    <div class="set-row">
+      <span class="set-icon">${c.emoji}</span>
+      <span class="set-label">${c.name}</span>
+      <div style="width:18px;height:18px;border-radius:50%;background:${c.color};margin-right:8px;flex-shrink:0;"></div>
+      ${i >= DEFAULT_CATS.length
+        ? `<button class="icon-btn" style="background:#FFF0F0;" onclick="delCat(${i})">🗑️</button>`
+        : `<span style="font-size:11px;color:var(--sub);">標準</span>`}
+    </div>`).join('');
+}
+window.openAddCat = function() {
+  document.getElementById('newEmoji').value   = '';
+  document.getElementById('newCatName').value = '';
+  selColor = PRESET_COLORS[Math.floor(Math.random()*PRESET_COLORS.length)];
+  buildSwatches();
+  openModal('addCatModal');
+};
+window.addCat = function() {
+  const emoji=document.getElementById('newEmoji').value.trim();
+  const name=document.getElementById('newCatName').value.trim();
+  if (!emoji||!name) { alert('絵文字とカテゴリー名を入力してください'); return; }
+  if (cats.find(c=>c.name===name)) { alert('同じ名前のカテゴリーがすでにあります'); return; }
+  cats.push({name,emoji,color:selColor});
+  save(); closeModal('addCatModal'); renderCatManage();
+};
+window.delCat = function(i) {
+  if (!confirm(`「${cats[i].name}」を削除しますか？`)) return;
+  cats.splice(i,1); save(); renderCatManage();
+};
+function buildSwatches() {
+  document.getElementById('swatchRow').innerHTML = PRESET_COLORS.map(c=>`
+    <div class="swatch ${c===selColor?'sel':''}" style="background:${c};" onclick="pickColor('${c}')"></div>
+  `).join('');
+}
+window.pickColor = function(c) { selColor=c; buildSwatches(); };
+
+// ============================================================
+//  SCHEDULE CANVAS
+// ============================================================
+function drawSched() {
+  const canvas=document.getElementById('schedCanvas');
+  const wrap=canvas.parentElement;
+  if (!wrap||!wrap.offsetWidth) return;
+  const dpr=window.devicePixelRatio||1;
+  const lw=wrap.offsetWidth-20, lh=lw*2.2;
+  canvas.width=lw*dpr; canvas.height=lh*dpr;
+  canvas.style.width=lw+'px'; canvas.style.height=lh+'px';
+  const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
+  const W=lw,H=lh,ML=44,MR=8,MT=10,MB=10;
+  const cW=W-ML-MR,cH=H-MT-MB,hH=cH/24;
+
+  ctx.fillStyle='#FAFAFA'; ctx.fillRect(0,0,W,H);
+
+  ctx.font=`${Math.max(9,Math.floor(hH*0.42))}px -apple-system,sans-serif`;
+  ctx.textAlign='right';
+  for (let h=0;h<=24;h++) {
+    const y=MT+h*hH;
+    ctx.strokeStyle='#E5E5EA'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(ML,y); ctx.lineTo(W-MR,y); ctx.stroke();
+    if (h<24) {
+      ctx.fillStyle='#8E8E93';
+      ctx.fillText(`${pad(h)}`,ML-5,y+hH*0.45);
+      ctx.strokeStyle='#F2F2F7'; ctx.lineWidth=0.5;
+      ctx.beginPath(); ctx.moveTo(ML,y+hH/2); ctx.lineTo(W-MR,y+hH/2); ctx.stroke();
+    }
+  }
+  actRegions=[];
+  actsForDate(viewDate).forEach(a => {
+    const s=new Date(a.startTime),e=new Date(a.endTime);
+    const sy=MT+(s.getHours()+s.getMinutes()/60)*hH;
+    const ey=MT+(e.getHours()+e.getMinutes()/60)*hH;
+    const bh=Math.max(ey-sy,3);
+    const cat=getCat(a.category);
+    ctx.fillStyle=cat.color+'CC';
+    rr(ctx,ML+2,sy,cW-4,bh,6); ctx.fill();
+    ctx.strokeStyle=cat.color; ctx.lineWidth=1.5;
+    rr(ctx,ML+2,sy,cW-4,bh,6); ctx.stroke();
+    actRegions.push({x:ML+2,y:sy,w:cW-4,h:bh,a});
+    if (bh>18) {
+      ctx.textAlign='left';
+      const fs=Math.min(12,bh*0.38);
+      ctx.font=`600 ${fs}px -apple-system,sans-serif`;
+      ctx.fillStyle='#1C1C1E';
+      ctx.fillText(bh>32?`${cat.emoji} ${a.title}`:a.title,ML+8,sy+Math.min(fs+2,bh*0.58));
+      if (bh>36) {
+        ctx.font=`${Math.min(10,bh*0.28)}px -apple-system,sans-serif`;
+        ctx.fillStyle='#555';
+        ctx.fillText(`${fmtTime(s)}〜${fmtTime(e)}`,ML+8,sy+bh*0.78);
+      }
+    }
+  });
+  renderLegend();
+}
+function rr(ctx,x,y,w,h,r) {
+  r=Math.min(r,h/2,w/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
+}
+function renderLegend() {
+  const el=document.getElementById('legendWrap');
+  const used=[...new Set(actsForDate(viewDate).map(a=>a.category))];
+  el.innerHTML=used.map(name=>{const c=getCat(name);
+    return `<span class="legend-tag" style="background:${c.color}22;color:${c.color};border:1px solid ${c.color}55;">${c.emoji} ${c.name}</span>`;
+  }).join('');
+}
+
+// Canvas tooltip
+const tooltip=document.getElementById('tooltip');
+document.getElementById('schedCanvas').addEventListener('mousemove',e=>{
+  const rect=document.getElementById('schedCanvas').getBoundingClientRect();
+  const x=e.clientX-rect.left,y=e.clientY-rect.top;
+  let hit=false;
+  for (const r of actRegions) {
+    if (x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h) {
+      const s=new Date(r.a.startTime),en=new Date(r.a.endTime),c=getCat(r.a.category);
+      tooltip.innerHTML=`<b>${c.emoji} ${r.a.title}</b><br>${fmtTime(s)}〜${fmtTime(en)}<br>${fmtDur(r.a.duration)}`;
+      tooltip.style.cssText=`display:block;left:${e.clientX+14}px;top:${e.clientY+14}px;`;
+      hit=true; document.getElementById('schedCanvas').style.cursor='pointer'; break;
+    }
+  }
+  if (!hit){tooltip.style.display='none';document.getElementById('schedCanvas').style.cursor='default';}
+});
+document.getElementById('schedCanvas').addEventListener('mouseleave',()=>{tooltip.style.display='none';});
+document.getElementById('schedCanvas').addEventListener('touchstart',e=>{
+  const t=e.touches[0],rect=document.getElementById('schedCanvas').getBoundingClientRect();
+  const x=t.clientX-rect.left,y=t.clientY-rect.top;
+  for (const r of actRegions) {
+    if (x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h) {
+      const s=new Date(r.a.startTime),en=new Date(r.a.endTime),c=getCat(r.a.category);
+      tooltip.innerHTML=`<b>${c.emoji} ${r.a.title}</b><br>${fmtTime(s)}〜${fmtTime(en)}<br>${fmtDur(r.a.duration)}`;
+      tooltip.style.cssText=`display:block;left:${t.clientX+10}px;top:${t.clientY-70}px;`;
+      setTimeout(()=>{tooltip.style.display='none';},2500); break;
+    }
+  }
+});
+
+// ============================================================
+//  EXPORT IMAGE
+// ============================================================
+window.exportImg = function() {
+  drawSched();
+  const c=document.getElementById('schedCanvas'),a=document.createElement('a');
+  a.download=`行動記録_${viewDate.getFullYear()}${pad(viewDate.getMonth()+1)}${pad(viewDate.getDate())}.png`;
+  a.href=c.toDataURL('image/png'); a.click();
+};
+
+// ============================================================
+//  DATA IMPORT / EXPORT
+// ============================================================
+window.exportData = function() {
+  const blob=new Blob([JSON.stringify({acts,cats,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.download=`行動記録_backup_${new Date().toLocaleDateString('ja-JP')}.json`;
+  a.href=URL.createObjectURL(blob); a.click(); URL.revokeObjectURL(a.href);
+};
+window.importData = function() { document.getElementById('importFile').click(); };
+window.handleImport = function(e) {
+  const file=e.target.files[0]; if (!file) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try {
+      const d=JSON.parse(ev.target.result);
+      if (d.acts) acts=d.acts;
+      if (d.cats) cats=d.cats;
+      save(); renderActs(); renderCatManage(); drawSched();
+      closeModal('dataModal'); alert('インポート完了！');
+    } catch { alert('ファイルの読み込みに失敗しました'); }
+  };
+  r.readAsText(file); e.target.value='';
+};
+window.clearAll = function() {
+  if (!confirm('全データを削除しますか？この操作は取り消せません。')) return;
+  acts=[]; cats=structuredClone(DEFAULT_CATS);
+  save(); renderActs(); renderCatManage(); drawSched();
+  closeModal('dataModal');
+};
+
+// ============================================================
+//  INIT
+// ============================================================
+function initUI() {
+  updateDateUI(); renderActs(); renderCatManage(); restoreTimer();
+  window.addEventListener('resize',()=>{
+    if (document.getElementById('page-schedule').classList.contains('active')) drawSched();
+  });
+}
+
+// Start
+showLoading();
+boot();
+</script>
+</body>
+</html>
