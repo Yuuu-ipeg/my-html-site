@@ -164,26 +164,7 @@
     .cat-icon { font-size: 18px; flex-shrink: 0; }
     .cat-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    /* ── Bottom nav ── */
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-      width: 100%; max-width: var(--max);
-      background: rgba(255,255,255,0.94); backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--border);
-      display: none; z-index: 200;
-    }
-    .nav-btn {
-      flex: 1; display: flex; flex-direction: column; align-items: center;
-      padding: 8px 4px 10px; cursor: pointer; border: none; background: transparent;
-      font-size: 9px; color: var(--sub); gap: 2px; transition: color .2s;
-    }
-    .nav-btn.active { color: var(--primary); }
-    .nav-icon { font-size: 22px; }
-
-    /* ── Pages ── */
-    .page { display: none; }
-    .page.active { display: block; }
-    #mainApp { display: none; padding-bottom: 76px; }
+    #mainApp { display: none; padding-bottom: 24px; }
 
     /* ── Modal (bottom sheet) ── */
     .modal {
@@ -291,64 +272,45 @@
     </div>
   </header>
 
-  <!-- PAGE: TIMER -->
-  <div class="page active" id="page-timer">
-    <div class="date-bar">
-      <button class="date-nav" onclick="changeDate(-1)">◀</button>
-      <span class="date-text" id="dateText"></span>
-      <button class="date-nav" onclick="changeDate(1)">▶</button>
-    </div>
-    <div class="card">
-      <div class="timer-display" id="timerDisplay">00:00:00</div>
-      <div class="timer-info" id="timerInfo">タイマー停止中</div>
-      <div class="timer-btns">
-        <button class="btn btn-primary" id="startBtn" onclick="startTimer()">▶ 開始</button>
-        <button class="btn btn-danger"  id="stopBtn"  onclick="stopTimer()" disabled>■ 停止</button>
-      </div>
-    </div>
-    <div class="sec-label">今日の記録</div>
-    <div class="card" id="actList"></div>
+  <!-- DATE BAR -->
+  <div class="date-bar">
+    <button class="date-nav" onclick="changeDate(-1)">◀</button>
+    <span class="date-text" id="dateText"></span>
+    <button class="date-nav" onclick="changeDate(1)">▶</button>
   </div>
 
-  <!-- PAGE: SCHEDULE -->
-  <div class="page" id="page-schedule">
-    <div class="date-bar">
-      <button class="date-nav" onclick="changeDate(-1)">◀</button>
-      <span class="date-text" id="dateText2"></span>
-      <button class="date-nav" onclick="changeDate(1)">▶</button>
-    </div>
-    <div class="card" style="margin-top:12px; padding:10px;">
-      <canvas id="schedCanvas"></canvas>
-    </div>
-    <div class="legend-wrap" id="legendWrap"></div>
-    <div style="padding:0 16px 16px; text-align:center;">
-      <button class="btn btn-success" onclick="exportImg()" style="flex:none; padding:13px 32px;">📸 画像として保存</button>
+  <!-- TIMER -->
+  <div class="card">
+    <div class="timer-display" id="timerDisplay">00:00:00</div>
+    <div class="timer-info" id="timerInfo">タイマー停止中</div>
+    <div class="timer-btns">
+      <button class="btn btn-primary" id="startBtn" onclick="startTimer()">▶ 開始</button>
+      <button class="btn btn-danger"  id="stopBtn"  onclick="stopTimer()" disabled>■ 停止</button>
     </div>
   </div>
 
-  <!-- PAGE: CATEGORIES -->
-  <div class="page" id="page-categories">
-    <div class="sec-label">カテゴリー管理</div>
-    <div class="card" id="catManageList"></div>
-    <div style="padding:0 16px; margin-top:12px;">
-      <button class="btn btn-primary" onclick="openAddCat()">＋ カテゴリーを追加</button>
-    </div>
+  <!-- TODAY'S RECORDS -->
+  <div class="sec-label">今日の記録</div>
+  <div class="card" id="actList"></div>
+
+  <!-- SCHEDULE -->
+  <div class="sec-label">📅 スケジュール表</div>
+  <div class="card" style="padding:10px;">
+    <canvas id="schedCanvas"></canvas>
+  </div>
+  <div class="legend-wrap" id="legendWrap"></div>
+  <div style="padding:0 16px 8px; text-align:center;">
+    <button class="btn btn-success" onclick="exportImg()" style="flex:none; padding:13px 32px;">📸 画像として保存</button>
+  </div>
+
+  <!-- CATEGORIES -->
+  <div class="sec-label">🏷️ カテゴリー管理</div>
+  <div class="card" id="catManageList"></div>
+  <div style="padding:0 16px; margin-top:12px;">
+    <button class="btn btn-primary" onclick="openAddCat()">＋ カテゴリーを追加</button>
   </div>
 
 </div><!-- /#mainApp -->
-
-<!-- ===== BOTTOM NAV ===== -->
-<nav class="bottom-nav" id="bottomNav">
-  <button class="nav-btn active" id="nav-timer"      onclick="showPage('timer')">
-    <span class="nav-icon">⏱️</span>タイマー
-  </button>
-  <button class="nav-btn" id="nav-schedule"   onclick="showPage('schedule')">
-    <span class="nav-icon">📅</span>スケジュール
-  </button>
-  <button class="nav-btn" id="nav-categories" onclick="showPage('categories')">
-    <span class="nav-icon">🏷️</span>カテゴリー
-  </button>
-</nav>
 
 <!-- ===== MODAL: Save activity ===== -->
 <div class="modal" id="saveModal">
@@ -547,12 +509,10 @@ function hideLoading() { document.getElementById('loadingOverlay').style.display
 function showLogin() {
   document.getElementById('loginPage').style.display  = 'flex';
   document.getElementById('mainApp').style.display    = 'none';
-  document.getElementById('bottomNav').style.display  = 'none';
 }
 function showApp() {
   document.getElementById('loginPage').style.display  = 'none';
   document.getElementById('mainApp').style.display    = 'block';
-  document.getElementById('bottomNav').style.display  = 'flex';
   initUI();
 }
 
@@ -572,8 +532,7 @@ function subscribeCloud() {
       saveCloud(); // 初回：デフォルト保存
     }
     setSyncStatus('ok');
-    renderActs(); renderCatManage();
-    if (document.getElementById('page-schedule').classList.contains('active')) drawSched();
+    renderActs(); renderCatManage(); drawSched();
   }, err => { console.error(err); setSyncStatus('err'); });
 }
 
@@ -675,26 +634,16 @@ function getCat(name)   { return cats.find(c=>c.name===name) || {name,emoji:'�
 // ============================================================
 window.changeDate = function(n) {
   viewDate = new Date(viewDate); viewDate.setDate(viewDate.getDate()+n);
-  updateDateUI(); renderActs();
-  if (document.getElementById('page-schedule').classList.contains('active')) drawSched();
+  updateDateUI(); renderActs(); drawSched();
 };
 function updateDateUI() {
-  const t = fmtDate(viewDate);
-  document.getElementById('dateText').textContent  = t;
-  document.getElementById('dateText2').textContent = t;
+  document.getElementById('dateText').textContent = fmtDate(viewDate);
 }
 
 // ============================================================
 //  PAGE NAV
 // ============================================================
-window.showPage = function(name) {
-  ['timer','schedule','categories'].forEach(n => {
-    document.getElementById('page-'+n).classList.toggle('active', n===name);
-    document.getElementById('nav-'+n).classList.toggle('active', n===name);
-  });
-  if (name === 'schedule')   drawSched();
-  if (name === 'categories') renderCatManage();
-};
+window.showPage = function() { /* no-op: single scroll layout */ };
 
 // ============================================================
 //  MODAL
@@ -793,13 +742,11 @@ window.saveEdit = function() {
   if (ne<=ns) { alert('終了時刻は開始より後にしてください'); return; }
   acts[editIdx]={...acts[editIdx],title,category:selEditCat,
     startTime:ns.toISOString(),endTime:ne.toISOString(),duration:Math.floor((ne-ns)/1000)};
-  save(); closeModal('editModal'); renderActs();
-  if (document.getElementById('page-schedule').classList.contains('active')) drawSched();
+  save(); closeModal('editModal'); renderActs(); drawSched();
 };
 window.deleteAct = function(idx) {
   if (!confirm('この記録を削除しますか？')) return;
-  acts.splice(idx,1); save(); renderActs();
-  if (document.getElementById('page-schedule').classList.contains('active')) drawSched();
+  acts.splice(idx,1); save(); renderActs(); drawSched();
 };
 
 // ============================================================
@@ -1037,9 +984,8 @@ window.clearAll = function() {
 // ============================================================
 function initUI() {
   updateDateUI(); renderActs(); renderCatManage(); restoreTimer();
-  window.addEventListener('resize',()=>{
-    if (document.getElementById('page-schedule').classList.contains('active')) drawSched();
-  });
+  setTimeout(drawSched, 100); // draw after layout settles
+  window.addEventListener('resize', drawSched);
 }
 
 // Start
