@@ -3,401 +3,467 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>行動記録</title>
+  <title>Time Logger Pro</title>
   <style>
     :root {
-      --primary: #007AFF;
-      --danger:  #FF3B30;
-      --success: #34C759;
-      --warning: #FF9500;
-      --bg:      #F2F2F7;
-      --card:    #FFFFFF;
-      --text:    #1C1C1E;
-      --sub:     #6C6C70;
-      --border:  #E5E5EA;
-      --r:       12px;
-      --max:     480px;
+      --primary:       #3B82F6;
+      --primary-light: #EFF6FF;
+      --danger:        #EF4444;
+      --success:       #10B981;
+      --warning:       #F59E0B;
+      --bg:            #F3F4F6;
+      --card:          #FFFFFF;
+      --text:          #111827;
+      --sub:           #6B7280;
+      --border:        #E5E7EB;
+      --r:             12px;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
-      background: var(--bg); color: var(--text);
-      max-width: var(--max); margin: 0 auto;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      background: var(--bg); color: var(--text); font-size: 14px;
     }
 
-    /* ── Loading overlay ── */
+    /* ── Loading ── */
     #loadingOverlay {
-      position: fixed; inset: 0; background: rgba(242,242,247,0.9);
+      position: fixed; inset: 0; background: rgba(243,244,246,0.92);
       display: flex; align-items: center; justify-content: center; z-index: 9999;
     }
     .spinner {
-      width: 42px; height: 42px; border: 3px solid var(--border);
+      width: 40px; height: 40px; border: 3px solid var(--border);
       border-top-color: var(--primary); border-radius: 50%;
       animation: spin .8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Login page ── */
+    /* ── Login ── */
     #loginPage {
       display: none; flex-direction: column;
       align-items: center; justify-content: center;
-      min-height: 100vh; padding: 32px 20px;
+      min-height: 100vh; padding: 32px 20px; background: var(--bg);
     }
-    .login-logo  { font-size: 60px; margin-bottom: 6px; }
-    .login-title { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
-    .login-sub   { font-size: 14px; color: var(--sub); margin-bottom: 32px; }
+    .login-logo  { font-size: 32px; font-weight: 900; color: var(--primary); margin-bottom: 8px; letter-spacing: -1px; }
+    .login-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .login-sub   { font-size: 13px; color: var(--sub); margin-bottom: 28px; }
     .login-card  {
-      background: var(--card); border-radius: 20px;
-      padding: 24px 20px; width: 100%; max-width: 420px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      background: var(--card); border-radius: 16px;
+      padding: 28px 24px; width: 100%; max-width: 400px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
     }
     .login-tabs  { display: flex; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
     .login-tab   {
-      flex: 1; padding: 10px; text-align: center;
-      font-size: 15px; font-weight: 600; cursor: pointer;
-      color: var(--sub); border-bottom: 2px solid transparent;
+      flex: 1; padding: 10px; text-align: center; font-size: 14px; font-weight: 600;
+      cursor: pointer; color: var(--sub); border-bottom: 2px solid transparent;
       margin-bottom: -2px; transition: all .2s;
     }
     .login-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
     .login-err {
-      background: #FFE5E5; color: var(--danger); border-radius: 10px;
+      background: #FEF2F2; color: var(--danger); border-radius: 8px;
       padding: 10px 14px; font-size: 13px; margin-bottom: 12px; display: none;
     }
     .pass-wrap { position: relative; margin-bottom: 10px; }
     .pass-wrap .inp { margin-bottom: 0; padding-right: 44px; }
-    .pass-eye {
-      position: absolute; right: 12px; top: 50%;
-      transform: translateY(-50%); cursor: pointer; font-size: 18px; color: var(--sub);
-    }
+    .pass-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px; color: var(--sub); }
     .login-hint { font-size: 12px; color: var(--sub); text-align: center; margin-top: 14px; line-height: 1.6; }
 
     /* ── Header ── */
     .header {
-      background: rgba(255,255,255,0.92); backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px); padding: 12px 14px 10px;
-      position: sticky; top: 0; z-index: 100;
-      border-bottom: 1px solid var(--border);
+      background: var(--card); border-bottom: 1px solid var(--border);
+      padding: 0 24px; height: 56px;
       display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; z-index: 100;
     }
-    .header-title { font-size: 18px; font-weight: 700; }
-    .header-right { display: flex; gap: 6px; align-items: center; }
-    .sync-dot {
-      font-size: 11px; font-weight: 600; padding: 3px 9px;
-      border-radius: 20px; transition: all .3s;
+    .header-title { font-size: 18px; font-weight: 700; color: var(--text); }
+    .header-right { display: flex; gap: 10px; align-items: center; }
+    .header-email { font-size: 13px; color: var(--sub); }
+    .sync-dot { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; transition: all .3s; }
+    .sync-ok  { background: #D1FAE5; color: #065F46; }
+    .sync-ing { background: #FEF3C7; color: #92400E; }
+    .sync-err { background: #FEE2E2; color: #991B1B; }
+
+    /* ── Main Layout ── */
+    #mainApp { display: none; }
+    .main-layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+      padding: 20px 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      align-items: start;
     }
-    .sync-ok  { background: #E8F8EF; color: var(--success); }
-    .sync-ing { background: #FFF3E0; color: var(--warning); }
-    .sync-err { background: #FFE5E5; color: var(--danger); }
-    .hdr-btn {
-      font-size: 12px; padding: 5px 11px; border-radius: 20px;
-      background: var(--bg); color: var(--sub); border: none; cursor: pointer; font-weight: 600;
+    @media (max-width: 800px) {
+      .main-layout { grid-template-columns: 1fr; padding: 12px 14px; gap: 12px; }
+      .header { padding: 0 14px; }
+      .header-email { display: none; }
     }
 
-    /* ── Date bar ── */
-    .date-bar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 16px; margin: 12px 16px 0;
+    /* ── Cards ── */
+    .card {
       background: var(--card); border-radius: var(--r);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
     }
-    .date-text { font-size: 15px; font-weight: 600; }
-    .date-nav {
-      width: 34px; height: 34px; border: none; border-radius: 50%;
-      background: var(--bg); font-size: 14px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
+    .card + .card { margin-top: 16px; }
+    .card-title {
+      font-size: 15px; font-weight: 600; color: var(--text);
+      padding: 16px 20px 12px;
     }
-
-    /* ── Section card ── */
-    .card { background: var(--card); border-radius: var(--r); margin: 12px 16px 0; overflow: hidden; }
-    .sec-label {
-      font-size: 12px; font-weight: 600; color: var(--sub);
-      text-transform: uppercase; letter-spacing: 0.6px; padding: 14px 16px 4px;
-    }
-
-    /* ── Timer ── */
-    .timer-display {
-      font-size: 58px; font-weight: 700; text-align: center;
-      color: var(--primary); padding: 20px 16px 6px;
-      font-variant-numeric: tabular-nums; letter-spacing: -2px;
-    }
-    .timer-info { text-align: center; font-size: 13px; color: var(--sub); padding-bottom: 4px; }
-    .timer-btns { display: flex; gap: 10px; padding: 14px 16px; }
+    .card-body { padding: 0 20px 20px; }
 
     /* ── Buttons ── */
     .btn {
-      flex: 1; padding: 14px 12px; border: none; border-radius: 10px;
-      font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity .15s, transform .1s;
+      flex: 1; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s;
+      background: var(--card); color: var(--text); white-space: nowrap;
     }
-    .btn:active:not(:disabled) { transform: scale(0.97); opacity: 0.85; }
-    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .btn-primary   { background: var(--primary); color: #fff; }
-    .btn-danger    { background: var(--danger);  color: #fff; }
-    .btn-success   { background: var(--success); color: #fff; }
-    .btn-secondary { background: var(--bg);      color: var(--text); }
-    .btn-sm { flex: none; padding: 8px 14px; font-size: 13px; }
+    .btn:hover:not(:disabled) { background: var(--bg); }
+    .btn:active:not(:disabled) { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn-primary:hover:not(:disabled) { background: #2563EB; border-color: #2563EB; }
+    .btn-danger  { background: var(--danger);  color: #fff; border-color: var(--danger); }
 
-    /* ── Activity list ── */
-    .act-item {
+    /* ── Form ── */
+    .field-label { font-size: 12px; font-weight: 600; color: var(--sub); margin-bottom: 5px; margin-top: 14px; }
+    .inp {
+      width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 14px; outline: none; background: #fff; transition: border-color .2s; color: var(--text);
+    }
+    .inp:focus { border-color: var(--primary); }
+    select.inp {
+      cursor: pointer; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236B7280' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+      padding-right: 28px;
+    }
+    textarea.inp { resize: none; height: 72px; line-height: 1.5; }
+
+    /* ── Timer ── */
+    .timer-display {
+      font-size: 52px; font-weight: 700; text-align: center;
+      color: var(--text); padding: 12px 0 2px;
+      font-variant-numeric: tabular-nums; letter-spacing: -2px;
+    }
+    .timer-sub    { text-align: center; font-size: 12px; color: var(--sub); padding-bottom: 2px; min-height: 18px; }
+    .timer-status { text-align: center; font-size: 13px; color: var(--sub); margin-bottom: 12px; min-height: 20px; }
+    .timer-btns   { display: flex; gap: 8px; }
+
+    /* ── Dot ── */
+    .dot    { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+    .dot-lg { width: 14px; height: 14px; }
+
+    /* ── Summary ── */
+    .summary-total { font-size: 14px; color: var(--primary); font-weight: 600; padding: 0 20px 12px; }
+    .cat-cards-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--border);
+    }
+    .cat-card {
+      padding: 14px 16px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    }
+    .cat-cards-grid > .cat-card:nth-child(3n) { border-right: none; }
+    .cat-card-name { font-size: 12px; color: var(--sub); margin-bottom: 3px; display: flex; align-items: center; gap: 5px; }
+    .cat-card-val  { font-size: 20px; font-weight: 700; color: var(--text); }
+    .cat-card-sub  { font-size: 11px; color: var(--sub); margin-top: 2px; }
+    .running-badge { color: var(--primary); font-weight: 600; font-size: 11px; }
+
+    /* ── Tabs ── */
+    .tabs-row { display: flex; border-bottom: 1px solid var(--border); }
+    .tab-btn {
+      flex: 1; padding: 12px; text-align: center; font-size: 13px; font-weight: 600;
+      cursor: pointer; color: var(--sub); border: none; background: transparent;
+      border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .2s;
+    }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    /* ── Date nav ── */
+    .date-nav-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+    }
+    .date-nav-btn {
+      padding: 5px 12px; border: 1.5px solid var(--border);
+      border-radius: 6px; cursor: pointer; background: var(--card); font-size: 14px; color: var(--text);
+    }
+    .date-nav-btn:hover { background: var(--bg); }
+    .date-text  { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .today-btn  {
+      font-size: 11px; padding: 3px 9px;
+      border: 1.5px solid var(--border); border-radius: 5px;
+      cursor: pointer; background: var(--card); color: var(--sub); font-weight: 600;
+    }
+    .today-btn:hover { background: var(--bg); }
+
+    /* ── Bar chart ── */
+    .bar-list    { padding: 14px 20px 16px; }
+    .bar-row     { margin-bottom: 11px; }
+    .bar-row:last-child { margin-bottom: 0; }
+    .bar-row-hd  { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .bar-name    { font-size: 13px; color: var(--text); }
+    .bar-val     { font-size: 13px; font-weight: 600; color: var(--sub); }
+    .bar-running { color: var(--primary); }
+    .bar-track   { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .bar-fill    { height: 100%; border-radius: 2px; transition: width .5s; }
+
+    /* ── Timeline ── */
+    .tl-hint { font-size: 12px; color: var(--sub); padding: 8px 20px 12px; }
+    .timeline-wrap { display: flex; padding: 0 20px 20px; gap: 10px; }
+    .tl-labels { width: 42px; flex-shrink: 0; position: relative; }
+    .tl-label  {
+      position: absolute; font-size: 11px; color: var(--sub);
+      transform: translateY(-6px); right: 0; text-align: right; white-space: nowrap;
+    }
+    .tl-body   { flex: 1; position: relative; }
+    .tl-line   { position: absolute; left: 0; right: 0; height: 1px; background: var(--border); }
+    .tl-block  {
+      position: absolute; left: 0; right: 0; border-radius: 6px;
+      padding: 4px 8px; overflow: hidden; cursor: pointer; box-sizing: border-box;
+    }
+    .tl-block-name { font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tl-block-time { font-size: 10px; color: rgba(255,255,255,0.85); margin-top: 2px; }
+    .tl-now        { position: absolute; left: 0; right: 0; height: 2px; background: var(--primary); z-index: 2; }
+    .tl-now::before {
+      content: ''; position: absolute; left: -4px; top: -3px;
+      width: 8px; height: 8px; border-radius: 50%; background: var(--primary);
+    }
+
+    /* ── Records ── */
+    .rec-header { padding: 14px 20px 10px; font-size: 14px; font-weight: 600; border-bottom: 1px solid var(--border); }
+    .rec-item   {
+      display: flex; align-items: flex-start;
+      padding: 12px 20px; border-bottom: 1px solid var(--border); gap: 12px;
+    }
+    .rec-item:last-child { border-bottom: none; }
+    .rec-dot    { margin-top: 5px; flex-shrink: 0; }
+    .rec-body   { flex: 1; min-width: 0; }
+    .rec-title  { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .rec-time   { font-size: 12px; color: var(--sub); font-weight: 400; }
+    .rec-memo   { font-size: 12px; color: var(--sub); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rec-dur    { font-size: 14px; font-weight: 600; color: var(--sub); white-space: nowrap; align-self: center; }
+    .rec-actions{ display: flex; gap: 4px; align-self: center; }
+    .icon-btn   { width: 28px; height: 28px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+    .empty      { text-align: center; padding: 28px 20px; color: var(--sub); font-size: 13px; }
+
+    /* ── Category management ── */
+    .cat-manage-row {
       display: flex; align-items: center;
-      padding: 11px 14px; border-bottom: 1px solid var(--border); gap: 10px;
+      padding: 11px 20px; border-bottom: 1px solid var(--border); gap: 10px;
     }
-    .act-item:last-child { border-bottom: none; }
-    .act-bar  { width: 4px; height: 38px; border-radius: 2px; flex-shrink: 0; }
-    .act-info { flex: 1; min-width: 0; }
-    .act-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .act-meta  { font-size: 11px; color: var(--sub); margin-top: 2px; }
-    .act-actions { display: flex; gap: 6px; }
-    .icon-btn {
-      width: 30px; height: 30px; border: none; border-radius: 7px;
-      cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center;
-    }
-    .empty { text-align: center; padding: 28px 16px; color: var(--sub); font-size: 13px; }
+    .cat-manage-row:last-child { border-bottom: none; }
+    .cat-manage-name { flex: 1; font-size: 14px; }
+    .cat-badge       { font-size: 11px; color: var(--sub); }
+    .add-cat-form    { padding: 14px 20px 18px; border-top: 1px solid var(--border); }
+    .add-cat-row     { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
 
-    /* ── Category grid ── */
-    .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 10px 14px; }
-    .cat-btn {
-      display: flex; align-items: center; gap: 8px; padding: 11px 12px;
-      border: 2px solid transparent; border-radius: 10px; background: var(--bg);
-      cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s; text-align: left;
-    }
-    .cat-btn.sel { font-weight: 700; }
-    .cat-icon { font-size: 18px; flex-shrink: 0; }
-    .cat-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* ── Swatch ── */
+    .swatch-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .swatch     { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: border-color .15s; }
+    .swatch.sel { border-color: var(--text); }
 
-    #mainApp { display: none; padding-bottom: 24px; }
-
-    /* ── Modal (bottom sheet) ── */
-    .modal {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.45); z-index: 500;
-      align-items: flex-end; justify-content: center;
-    }
+    /* ── Modal ── */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.42); z-index: 500; align-items: flex-end; justify-content: center; }
     .modal.open { display: flex; }
     .sheet {
-      background: var(--card); border-radius: 20px 20px 0 0;
-      width: 100%; max-width: var(--max); padding: 16px 18px 40px;
+      background: var(--card); border-radius: 18px 18px 0 0;
+      width: 100%; max-width: 540px; padding: 16px 20px 36px;
       max-height: 92vh; overflow-y: auto;
     }
-    .handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
-    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 14px; }
-    .modal-row { display: flex; gap: 8px; margin-top: 10px; }
+    .handle      { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+    .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+    .modal-row   { display: flex; gap: 8px; margin-top: 14px; }
+    .inp-label   { font-size: 12px; color: var(--sub); margin-bottom: 4px; font-weight: 600; }
+    .time-row    { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
 
-    /* ── Form inputs ── */
-    .inp {
-      width: 100%; padding: 12px 13px; border: 1.5px solid var(--border);
-      border-radius: 10px; font-size: 16px; outline: none; margin-bottom: 10px;
-      background: var(--bg); transition: border-color .2s;
+    /* ── Cat selector (edit modal) ── */
+    .cat-sel-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px; }
+    .cat-sel-btn  {
+      display: flex; align-items: center; gap: 8px; padding: 9px 12px;
+      border: 1.5px solid transparent; border-radius: 8px; background: var(--bg);
+      cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s; text-align: left;
     }
-    .inp:focus { border-color: var(--primary); background: #fff; }
-    .inp-label { font-size: 12px; color: var(--sub); margin-bottom: 4px; font-weight: 500; }
-    .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-
-    /* ── Settings rows ── */
-    .set-row {
-      display: flex; align-items: center;
-      padding: 13px 16px; border-bottom: 1px solid var(--border); gap: 12px;
-    }
-    .set-row:last-child { border-bottom: none; }
-    .set-icon  { font-size: 20px; width: 30px; text-align: center; }
-    .set-label { flex: 1; font-size: 15px; }
-
-    /* ── Canvas ── */
-    #schedCanvas { width: 100%; display: block; }
-    .legend-wrap { padding: 8px 16px 12px; display: flex; flex-wrap: wrap; gap: 6px; }
-    .legend-tag {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
-    }
+    .cat-sel-btn.sel { font-weight: 700; }
 
     /* ── Tooltip ── */
     #tooltip {
-      position: fixed; background: rgba(0,0,0,0.82); color: #fff;
-      padding: 9px 13px; border-radius: 10px; font-size: 12px;
+      position: fixed; background: rgba(17,24,39,0.88); color: #fff;
+      padding: 8px 12px; border-radius: 8px; font-size: 12px;
       pointer-events: none; display: none; z-index: 999; max-width: 180px; line-height: 1.5;
     }
-
-    /* ── Color swatch ── */
-    .swatch-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-    .swatch {
-      width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
-      border: 3px solid transparent; transition: border-color .15s;
-    }
-    .swatch.sel { border-color: var(--text); }
   </style>
 </head>
 <body>
 
-<!-- ===== LOADING ===== -->
+<!-- LOADING -->
 <div id="loadingOverlay"><div class="spinner"></div></div>
 
-<!-- ===== LOGIN PAGE ===== -->
+<!-- LOGIN -->
 <div id="loginPage">
-  <div class="login-logo">📊</div>
-  <div class="login-title">行動記録</div>
-  <div class="login-sub">毎日の活動を記録・PC&スマホで同期</div>
-
+  <div class="login-logo">TL</div>
+  <div class="login-title">Time Logger Pro</div>
+  <div class="login-sub">&#26085;&#12293;&#12398;&#27963;&#21205;&#12434;&#35352;&#37682;&#12539;PC&amp;&#12473;&#12510;&#12507;&#12391;&#21516;&#26399;</div>
   <div class="login-card">
     <div class="login-tabs">
-      <div class="login-tab active" id="tab-login"    onclick="switchTab('login')">ログイン</div>
-      <div class="login-tab"        id="tab-register" onclick="switchTab('register')">新規登録</div>
+      <div class="login-tab active" id="tab-login"    onclick="switchTab('login')">&#12525;&#12464;&#12452;&#12531;</div>
+      <div class="login-tab"        id="tab-register" onclick="switchTab('register')">&#26032;&#35215;&#30331;&#37682;</div>
     </div>
     <div id="loginErr" class="login-err"></div>
-    <div class="inp-label">メールアドレス</div>
+    <div class="inp-label">&#12513;&#12540;&#12523;&#12450;&#12489;&#12524;&#12473;</div>
     <input class="inp" type="email" id="loginEmail" placeholder="example@email.com" autocomplete="email">
-    <div class="inp-label">パスワード</div>
+    <div class="inp-label" style="margin-top:10px;">&#12497;&#12473;&#12527;&#12540;&#12489;</div>
     <div class="pass-wrap">
-      <input class="inp" type="password" id="loginPassword" placeholder="6文字以上" autocomplete="current-password">
-      <span class="pass-eye" onclick="togglePass()">👁️</span>
+      <input class="inp" type="password" id="loginPassword" placeholder="6&#25991;&#23383;&#20197;&#19978;" autocomplete="current-password">
+      <span class="pass-eye" onclick="togglePass()">&#128065;</span>
     </div>
     <div id="btnLogin">
-      <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="doLogin()">ログイン</button>
+      <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="doLogin()">&#12525;&#12464;&#12452;&#12531;</button>
     </div>
     <div id="btnRegister" style="display:none;">
-      <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="doRegister()">アカウントを作成</button>
+      <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="doRegister()">&#12450;&#12459;&#12454;&#12531;&#12488;&#12434;&#20316;&#25104;</button>
     </div>
-    <p class="login-hint">ログインするとPCとスマホで自動同期されます</p>
+    <p class="login-hint">&#12525;&#12464;&#12452;&#12531;&#12377;&#12427;&#12392;PC&#12392;&#12473;&#12510;&#12507;&#12391;&#33258;&#21205;&#21516;&#26399;&#12373;&#12428;&#12414;&#12377;</p>
   </div>
 </div>
 
-<!-- ===== MAIN APP ===== -->
+<!-- MAIN APP -->
 <div id="mainApp">
 
   <!-- HEADER -->
   <header class="header">
-    <span class="header-title">📊 行動記録</span>
+    <span class="header-title">Time Logger Pro</span>
     <div class="header-right">
-      <span id="syncBadge" class="sync-dot sync-ok">✓ 同期済</span>
-      <button class="hdr-btn" onclick="openModal('dataModal')">💾</button>
-      <button class="hdr-btn" id="logoutBtn" onclick="doLogout()" title="ログアウト">⏏ 退出</button>
+      <span id="userEmail" class="header-email"></span>
+      <span id="syncBadge" class="sync-dot sync-ok">&#21516;&#26399;&#28168;</span>
+      <button class="btn" style="padding:6px 14px;" onclick="openModal('dataModal')">&#12487;&#12540;&#12479;&#31649;&#29702;</button>
+      <button class="btn" id="logoutBtn" onclick="doLogout()" style="padding:6px 14px;">&#12525;&#12464;&#12450;&#12454;&#12488;</button>
     </div>
   </header>
 
-  <!-- DATE BAR -->
-  <div class="date-bar">
-    <button class="date-nav" onclick="changeDate(-1)">◀</button>
-    <span class="date-text" id="dateText"></span>
-    <button class="date-nav" onclick="changeDate(1)">▶</button>
-  </div>
+  <!-- TWO-COLUMN LAYOUT -->
+  <div class="main-layout">
 
-  <!-- TIMER -->
-  <div class="card">
-    <div class="timer-display" id="timerDisplay">00:00:00</div>
-    <div class="timer-info" id="timerInfo">タイマー停止中</div>
-    <div class="timer-btns">
-      <button class="btn btn-primary" id="startBtn" onclick="startTimer()">▶ 開始</button>
-      <button class="btn btn-danger"  id="stopBtn"  onclick="stopTimer()" disabled>■ 停止</button>
+    <!-- LEFT: TIMER PANEL -->
+    <div>
+      <div class="card">
+        <div class="card-title">&#35336;&#28204;</div>
+        <div class="card-body">
+          <div class="timer-display" id="timerDisplay">00:00:00</div>
+          <div class="timer-sub"    id="timerSub"></div>
+          <div class="timer-status" id="timerInfo">&#20572;&#27490;&#20013;</div>
+          <div class="timer-btns">
+            <button class="btn btn-primary" id="startBtn" onclick="startTimer()">Start</button>
+            <button class="btn" id="stopBtn" onclick="stopTimer()" disabled>Stop &amp; Save</button>
+            <button class="btn" onclick="cancelTimer()">Clear</button>
+          </div>
+          <div class="field-label">&#12459;&#12486;&#12468;&#12522;</div>
+          <select class="inp" id="catSelect"></select>
+          <div class="field-label">&#12513;&#12514;</div>
+          <textarea class="inp" id="actMemo" placeholder="&#20309;&#12434;&#12375;&#12383;&#12363;&#35352;&#20837;&#12375;&#12390;&#12367;&#12384;&#12373;&#12356;"></textarea>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- TODAY'S RECORDS -->
-  <div class="sec-label">今日の記録</div>
-  <div class="card" id="actList"></div>
+    <!-- RIGHT PANEL -->
+    <div>
 
-  <!-- SCHEDULE -->
-  <div class="sec-label">📅 スケジュール表</div>
-  <div class="card" style="padding:10px;">
-    <canvas id="schedCanvas"></canvas>
-  </div>
-  <div class="legend-wrap" id="legendWrap"></div>
-  <div style="padding:0 16px 8px; text-align:center;">
-    <button class="btn btn-success" onclick="exportImg()" style="flex:none; padding:13px 32px;">📸 画像として保存</button>
-  </div>
+      <!-- TODAY SUMMARY -->
+      <div class="card">
+        <div class="card-title">&#26412;&#26085;&#12398;&#38598;&#35336;</div>
+        <div class="summary-total" id="summaryTotal">&#21512;&#35336;: 0&#20998;</div>
+        <div class="cat-cards-grid" id="catCardsGrid"></div>
+      </div>
 
-  <!-- CATEGORIES -->
-  <div class="sec-label">🏷️ カテゴリー管理</div>
-  <div class="card" id="catManageList"></div>
-  <div style="padding:0 16px; margin-top:12px;">
-    <button class="btn btn-primary" onclick="openAddCat()">＋ カテゴリーを追加</button>
-  </div>
+      <!-- STATS + DATE NAV -->
+      <div class="card" style="margin-top:16px;">
+        <div class="tabs-row">
+          <button class="tab-btn active" id="tab-day"   onclick="setStatTab('day')">&#26085;</button>
+          <button class="tab-btn"        id="tab-week"  onclick="setStatTab('week')">週</button>
+          <button class="tab-btn"        id="tab-month" onclick="setStatTab('month')">&#26376;</button>
+        </div>
+        <div class="date-nav-row">
+          <button class="date-nav-btn" onclick="changeDate(-1)">&#8592;</button>
+          <div class="date-text">
+            <span id="dateText"></span>
+            <button class="today-btn" onclick="goToday()">&#20170;&#26085;</button>
+          </div>
+          <button class="date-nav-btn" onclick="changeDate(1)">&#8594;</button>
+        </div>
+        <div class="bar-list" id="barList"></div>
+        <div class="cat-cards-grid" id="catCardsGrid2" style="border-top:1px solid var(--border);"></div>
+      </div>
 
+      <!-- TIMELINE -->
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>24&#26178;&#38291;&#12479;&#12452;&#12512;&#12521;&#12452;&#12531;</span>
+          <button class="btn" style="padding:5px 12px;font-size:12px;flex:none;" onclick="exportImg()">&#30011;&#20687;&#12392;&#12375;&#12390;&#20445;&#23384;</button>
+        </div>
+        <div class="tl-hint">タイムラインをタップして詳細を表示 / クリックで編集</div>
+        <div class="timeline-wrap" id="timelineWrap">
+          <div class="tl-labels" id="tlLabels"></div>
+          <div class="tl-body"   id="tlBody"></div>
+        </div>
+        <canvas id="schedCanvas" style="display:none;"></canvas>
+      </div>
+
+      <!-- RECORDS -->
+      <div class="card" style="margin-top:16px;">
+        <div class="rec-header" id="recHeader">&#35352;&#37682;&#19968;&#35239;</div>
+        <div id="actList"></div>
+      </div>
+
+      <!-- CATEGORY MANAGEMENT -->
+      <div class="card" style="margin-top:16px; margin-bottom:28px;">
+        <div class="card-title">&#12459;&#12486;&#12468;&#12522;&#12540;&#31649;&#29702;</div>
+        <div id="catManageList"></div>
+        <div class="add-cat-form">
+          <div class="inp-label">&#12459;&#12486;&#12468;&#12522;&#12540;&#21517;</div>
+          <div class="add-cat-row">
+            <input class="inp" id="newCatName" placeholder="&#20363;: &#35501;&#26360;" style="flex:1;">
+            <button class="btn btn-primary" onclick="addCat()" style="flex:none;padding:9px 16px;">+ &#36861;&#21152;</button>
+          </div>
+          <div class="inp-label">&#33394;&#12434;&#36984;&#25246;</div>
+          <div class="swatch-row" id="swatchRow"></div>
+        </div>
+      </div>
+
+    </div><!-- /right panel -->
+  </div><!-- /.main-layout -->
 </div><!-- /#mainApp -->
 
-<!-- ===== MODAL: Save activity ===== -->
-<div class="modal" id="saveModal">
-  <div class="sheet">
-    <div class="handle"></div>
-    <div class="modal-title">活動を記録</div>
-    <div class="inp-label">タイトル</div>
-    <input class="inp" type="text" id="actTitle" placeholder="例: 数学の勉強">
-    <div class="inp-label" style="margin-top:4px;">カテゴリー</div>
-    <div class="cat-grid" id="catSel"></div>
-    <div class="modal-row">
-      <button class="btn btn-secondary" onclick="cancelSave()">キャンセル</button>
-      <button class="btn btn-primary"   onclick="saveAct()">保存</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== MODAL: Edit activity ===== -->
+<!-- MODAL: Edit activity -->
 <div class="modal" id="editModal">
   <div class="sheet">
     <div class="handle"></div>
     <div class="modal-title">活動を編集</div>
-    <div class="inp-label">タイトル</div>
-    <input class="inp" type="text" id="editTitle" placeholder="タイトル">
+    <div class="inp-label">&#12513;&#12514; / &#12479;&#12452;&#12488;&#12523;</div>
+    <input class="inp" type="text" id="editTitle" placeholder="&#12513;&#12514;">
     <div class="time-row">
-      <div>
-        <div class="inp-label">開始時刻</div>
-        <input class="inp" type="time" id="editStart" style="margin-bottom:0;">
-      </div>
-      <div>
-        <div class="inp-label">終了時刻</div>
-        <input class="inp" type="time" id="editEnd" style="margin-bottom:0;">
-      </div>
+      <div><div class="inp-label">&#38283;&#22987;&#26178;&#21051;</div><input class="inp" type="time" id="editStart"></div>
+      <div><div class="inp-label">&#32066;&#20102;&#26178;&#21051;</div><input class="inp" type="time" id="editEnd"></div>
     </div>
-    <div class="inp-label" style="margin-top:10px;">カテゴリー</div>
-    <div class="cat-grid" id="catSelEdit"></div>
+    <div class="inp-label" style="margin-top:10px;">&#12459;&#12486;&#12468;&#12522;&#12540;</div>
+    <div class="cat-sel-grid" id="catSelEdit"></div>
     <div class="modal-row">
-      <button class="btn btn-secondary" onclick="closeModal('editModal')">キャンセル</button>
-      <button class="btn btn-primary"   onclick="saveEdit()">保存</button>
+      <button class="btn" onclick="closeModal('editModal')">&#12461;&#12515;&#12531;&#12475;&#12523;</button>
+      <button class="btn btn-primary" onclick="saveEdit()">&#20445;&#23384;</button>
     </div>
   </div>
 </div>
 
-<!-- ===== MODAL: Add category ===== -->
-<div class="modal" id="addCatModal">
-  <div class="sheet">
-    <div class="handle"></div>
-    <div class="modal-title">カテゴリーを追加</div>
-    <div class="inp-label">絵文字 (1文字)</div>
-    <input class="inp" type="text" id="newEmoji" placeholder="例: 📖" maxlength="2">
-    <div class="inp-label">カテゴリー名</div>
-    <input class="inp" type="text" id="newCatName" placeholder="例: 読書">
-    <div class="inp-label">色を選択</div>
-    <div class="swatch-row" id="swatchRow"></div>
-    <div class="modal-row">
-      <button class="btn btn-secondary" onclick="closeModal('addCatModal')">キャンセル</button>
-      <button class="btn btn-primary"   onclick="addCat()">追加</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== MODAL: Data management ===== -->
+<!-- MODAL: Data management -->
 <div class="modal" id="dataModal">
   <div class="sheet">
     <div class="handle"></div>
-    <div class="modal-title">💾 データ管理</div>
-    <p style="font-size:13px; color:var(--sub); margin-bottom:14px;">
-      データはクラウドに自動同期されます。<br>同じアカウントでログインすると PC・スマホで共有できます。
+    <div class="modal-title">&#12487;&#12540;&#12479;&#31649;&#29702;</div>
+    <p style="font-size:13px;color:var(--sub);margin-bottom:16px;line-height:1.6;">
+      &#12487;&#12540;&#12479;&#12399;&#12463;&#12521;&#12454;&#12489;&#12395;&#33258;&#21205;&#21516;&#26399;&#12373;&#12428;&#12414;&#12377;&#12290;<br>
+      &#21516;&#12376;&#12450;&#12459;&#12454;&#12531;&#12488;&#12391;&#12525;&#12464;&#12452;&#12531;&#12377;&#12427;&#12392;PC&#12539;&#12473;&#12510;&#12507;&#12391;&#20849;&#26377;&#12391;&#12365;&#12414;&#12377;&#12290;
     </p>
-    <div class="card" style="margin:0 0 12px;">
-      <div class="set-row">
-        <span class="set-icon">📤</span>
-        <span class="set-label">データをエクスポート</span>
-        <button class="btn btn-secondary btn-sm" onclick="exportData()">保存</button>
-      </div>
-      <div class="set-row">
-        <span class="set-icon">📥</span>
-        <span class="set-label">データをインポート</span>
-        <button class="btn btn-secondary btn-sm" onclick="importData()">読込</button>
-      </div>
-      <div class="set-row">
-        <span class="set-icon">🗑️</span>
-        <span class="set-label" style="color:var(--danger);">全データを削除</span>
-        <button class="btn btn-danger btn-sm" onclick="clearAll()">削除</button>
-      </div>
-    </div>
-    <button class="btn btn-secondary" onclick="closeModal('dataModal')">閉じる</button>
+    <button class="btn" style="width:100%;margin-bottom:8px;" onclick="exportData()">&#12456;&#12463;&#12473;&#12509;&#12540;&#12488;</button>
+    <button class="btn" style="width:100%;margin-bottom:8px;" onclick="importData()">&#12452;&#12531;&#12509;&#12540;&#12488;</button>
+    <button class="btn btn-danger" style="width:100%;margin-bottom:12px;" onclick="clearAll()">&#20840;&#12487;&#12540;&#12479;&#12434;&#21066;&#38500;</button>
+    <button class="btn" style="width:100%;" onclick="closeModal('dataModal')">&#38281;&#12376;&#12427;</button>
   </div>
 </div>
 
@@ -433,21 +499,20 @@ const firebaseConfig = {
 //  CONSTANTS
 // ============================================================
 const PRESET_COLORS = [
-  '#FF6B6B','#FF9F43','#FFE66D','#A8DADC','#4ECDC4',
-  '#95E1D3','#007AFF','#B4A7D6','#FFB6B9','#D4A5A5',
-  '#C7CEEA','#FFDAC1','#34C759','#5856D6','#FF3B30'
+  '#EF4444','#F97316','#EAB308','#22C55E','#10B981',
+  '#06B6D4','#3B82F6','#8B5CF6','#EC4899','#6B7280',
+  '#14B8A6','#F59E0B','#84CC16','#A855F7','#F43F5E'
 ];
 const DEFAULT_CATS = [
-  { name:'勉強時間', emoji:'📚', color:'#FF6B6B' },
-  { name:'スマホ時間',emoji:'📱', color:'#4ECDC4' },
-  { name:'遊び',     emoji:'🎮', color:'#FFE66D' },
-  { name:'生活',     emoji:'🏠', color:'#95E1D3' },
-  { name:'睡眠',     emoji:'😴', color:'#A8DADC' },
-  { name:'休憩',     emoji:'☕', color:'#C7CEEA' },
-  { name:'バイト',   emoji:'💼', color:'#FFDAC1' },
-  { name:'移動',     emoji:'🚶', color:'#B4A7D6' },
-  { name:'ご飯',     emoji:'🍽️', color:'#FFB6B9' },
-  { name:'自由時間', emoji:'✨', color:'#D4A5A5' },
+  { name:'勉強',    color:'#3B82F6' },
+  { name:'学校',    color:'#8B5CF6' },
+  { name:'移動時間',color:'#10B981' },
+  { name:'ご飯',    color:'#F97316' },
+  { name:'休憩',    color:'#EAB308' },
+  { name:'筋トレ',  color:'#A855F7' },
+  { name:'遊び',    color:'#EC4899' },
+  { name:'睡眠',    color:'#06B6D4' },
+  { name:'その他',  color:'#9CA3AF' },
 ];
 
 // ============================================================
@@ -457,19 +522,15 @@ let fbAuth, fbDb, currentUser = null, unsubscribe = null;
 let acts = [], cats = [];
 let viewDate = new Date();
 let timerIv = null, timerStart = null, timerSec = 0;
-let editIdx = null, selCat = null, selEditCat = null, selColor = PRESET_COLORS[0];
-let actRegions = [];
+let editIdx = null, selEditCat = null, selColor = PRESET_COLORS[0];
+let statTab = 'day';
 const isFirebaseConfigured = () => firebaseConfig.apiKey !== 'YOUR_API_KEY';
 
 // ============================================================
 //  FIREBASE INIT
 // ============================================================
 function boot() {
-  if (!isFirebaseConfigured()) {
-    // Firebase未設定 → ローカルモードで起動
-    startLocalMode();
-    return;
-  }
+  if (!isFirebaseConfigured()) { startLocalMode(); return; }
   try {
     const app = initializeApp(firebaseConfig);
     fbAuth = getAuth(app);
@@ -478,41 +539,45 @@ function boot() {
       hideLoading();
       if (user) {
         currentUser = user;
+        document.getElementById('userEmail').textContent = user.email;
         document.getElementById('logoutBtn').title = user.email;
-        showApp();
-        subscribeCloud();
+        showApp(); subscribeCloud();
       } else {
         currentUser = null;
         if (unsubscribe) { unsubscribe(); unsubscribe = null; }
         showLogin();
       }
     });
-  } catch(e) {
-    console.error(e);
-    startLocalMode();
-  }
+  } catch(e) { console.error(e); startLocalMode(); }
 }
 
 function startLocalMode() {
   hideLoading();
   acts = JSON.parse(localStorage.getItem('acts_v3') || '[]');
   cats = JSON.parse(localStorage.getItem('cats_v3') || 'null') || structuredClone(DEFAULT_CATS);
+  migrateCats();
   const badge = document.getElementById('syncBadge');
-  badge.textContent = '⚠️ ローカル'; badge.className = 'sync-dot sync-err';
+  badge.textContent = 'ローカル'; badge.className = 'sync-dot sync-err';
   document.getElementById('logoutBtn').style.display = 'none';
+  document.getElementById('userEmail').textContent = 'ローカルモード';
   showApp();
+}
+
+// strip legacy emoji field
+function migrateCats() {
+  cats = cats.map(c => ({ name: c.name, color: c.color || '#9CA3AF' }));
 }
 
 function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
 function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
 
 function showLogin() {
-  document.getElementById('loginPage').style.display  = 'flex';
-  document.getElementById('mainApp').style.display    = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('mainApp').style.display   = 'none';
 }
 function showApp() {
-  document.getElementById('loginPage').style.display  = 'none';
-  document.getElementById('mainApp').style.display    = 'block';
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('mainApp').style.display   = 'block';
   initUI();
 }
 
@@ -529,16 +594,16 @@ function subscribeCloud() {
       cats = (d.cats && d.cats.length) ? d.cats : structuredClone(DEFAULT_CATS);
     } else {
       acts = []; cats = structuredClone(DEFAULT_CATS);
-      saveCloud(); // 初回：デフォルト保存
+      saveCloud();
     }
+    migrateCats();
     setSyncStatus('ok');
-    renderActs(); renderCatManage(); drawSched();
+    renderAll();
   }, err => { console.error(err); setSyncStatus('err'); });
 }
 
 async function saveCloud() {
   if (!currentUser || !fbDb) {
-    // ローカル保存
     localStorage.setItem('acts_v3', JSON.stringify(acts));
     localStorage.setItem('cats_v3', JSON.stringify(cats));
     return;
@@ -552,15 +617,15 @@ async function saveCloud() {
 
 function setSyncStatus(s) {
   const el = document.getElementById('syncBadge');
-  if (s === 'ok')  { el.textContent = '✓ 同期済';  el.className = 'sync-dot sync-ok'; }
-  if (s === 'ing') { el.textContent = '⟳ 同期中';  el.className = 'sync-dot sync-ing'; }
-  if (s === 'err') { el.textContent = '✗ エラー';  el.className = 'sync-dot sync-err'; }
+  if (s==='ok')  { el.textContent='同期済';   el.className='sync-dot sync-ok'; }
+  if (s==='ing') { el.textContent='同期中...'; el.className='sync-dot sync-ing'; }
+  if (s==='err') { el.textContent='エラー';    el.className='sync-dot sync-err'; }
 }
 
 function save() { saveCloud(); }
 
 // ============================================================
-//  AUTH UI  (window 経由でインラインonclick から呼ぶ)
+//  AUTH UI
 // ============================================================
 window.switchTab = function(tab) {
   const isLogin = tab === 'login';
@@ -577,13 +642,13 @@ window.togglePass = function() {
 };
 
 const ERR_MAP = {
-  'auth/user-not-found':     'メールアドレスが見つかりません',
-  'auth/wrong-password':     'パスワードが間違っています',
-  'auth/invalid-credential': 'メールアドレスまたはパスワードが間違っています',
+  'auth/user-not-found':      'メールアドレスが見つかりません',
+  'auth/wrong-password':      'パスワードが間違っています',
+  'auth/invalid-credential':  'メールまたはパスワードが間違っています',
   'auth/email-already-in-use':'このメールは既に登録されています',
-  'auth/weak-password':      'パスワードは6文字以上にしてください',
-  'auth/invalid-email':      '有効なメールアドレスを入力してください',
-  'auth/too-many-requests':  'しばらく待ってから再試行してください',
+  'auth/weak-password':       'パスワードは6文字以上にしてください',
+  'auth/invalid-email':       '有効なメールアドレスを入力してください',
+  'auth/too-many-requests':   'しばらく待ってから再試行してください',
 };
 function showErr(msg) {
   const code = (msg.match(/\((auth\/[^)]+)\)/) || [])[1] || '';
@@ -596,8 +661,7 @@ window.doLogin = async function() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass  = document.getElementById('loginPassword').value;
   if (!email || !pass) { showErr('(auth/invalid-email)'); return; }
-  showLoading();
-  document.getElementById('loginErr').style.display = 'none';
+  showLoading(); document.getElementById('loginErr').style.display = 'none';
   try { await signInWithEmailAndPassword(fbAuth, email, pass); }
   catch(e) { hideLoading(); showErr(e.message); }
 };
@@ -606,44 +670,69 @@ window.doRegister = async function() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass  = document.getElementById('loginPassword').value;
   if (!email || !pass) { showErr('(auth/invalid-email)'); return; }
-  showLoading();
-  document.getElementById('loginErr').style.display = 'none';
+  showLoading(); document.getElementById('loginErr').style.display = 'none';
   try { await createUserWithEmailAndPassword(fbAuth, email, pass); }
   catch(e) { hideLoading(); showErr(e.message); }
 };
 
 window.doLogout = async function() {
   if (!confirm('ログアウトしますか？')) return;
-  await signOut(fbAuth);
-  acts = []; cats = [];
+  await signOut(fbAuth); acts = []; cats = [];
 };
 
 // ============================================================
 //  HELPERS
 // ============================================================
-function pad(n)     { return String(n).padStart(2,'0'); }
-function fmtDate(d) { return d.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'}); }
-function fmtTime(d) { return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
-function fmtDur(sec){ const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60); return h>0?`${h}時間${m}分`:`${m}分`; }
-function dateKey(d) { return d.toDateString(); }
+function pad(n)      { return String(n).padStart(2,'0'); }
+function fmtDate(d)  { return d.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'}); }
+function fmtTime(d)  { return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function fmtDur(sec) { const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60); return h>0?`${h}時間${m}分`:`${m}分`; }
+function fmtShort(sec) {
+  if (sec >= 3600) return (sec / 3600).toFixed(1) + 'h';
+  return Math.floor(sec / 60) + '分';
+}
+function dateKey(d)     { return d.toDateString(); }
 function actsForDate(d) { return acts.filter(a => new Date(a.date).toDateString() === dateKey(d)); }
-function getCat(name)   { return cats.find(c=>c.name===name) || {name,emoji:'📌',color:'#999'}; }
+function getCat(name)   { return cats.find(c => c.name === name) || { name, color: '#9CA3AF' }; }
 
 // ============================================================
 //  DATE NAV
 // ============================================================
 window.changeDate = function(n) {
-  viewDate = new Date(viewDate); viewDate.setDate(viewDate.getDate()+n);
-  updateDateUI(); renderActs(); drawSched();
+  viewDate = new Date(viewDate); viewDate.setDate(viewDate.getDate() + n);
+  renderAll();
 };
+window.goToday = function() { viewDate = new Date(); renderAll(); };
 function updateDateUI() {
   document.getElementById('dateText').textContent = fmtDate(viewDate);
 }
 
 // ============================================================
-//  PAGE NAV
+//  STAT TABS
 // ============================================================
-window.showPage = function() { /* no-op: single scroll layout */ };
+window.setStatTab = function(tab) {
+  statTab = tab;
+  ['day','week','month'].forEach(t =>
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab)
+  );
+  renderBars(); renderCatCards2();
+};
+
+function getActsForTab() {
+  if (statTab === 'day') return actsForDate(viewDate);
+  if (statTab === 'week') {
+    const d0 = new Date(viewDate); d0.setDate(d0.getDate() - d0.getDay());
+    const d1 = new Date(d0); d1.setDate(d0.getDate() + 7);
+    return acts.filter(a => { const d = new Date(a.date); return d >= d0 && d < d1; });
+  }
+  if (statTab === 'month') {
+    return acts.filter(a => {
+      const d = new Date(a.date);
+      return d.getFullYear() === viewDate.getFullYear() && d.getMonth() === viewDate.getMonth();
+    });
+  }
+  return [];
+}
 
 // ============================================================
 //  MODAL
@@ -656,336 +745,417 @@ window.closeModal = function(id) { document.getElementById(id).classList.remove(
 // ============================================================
 window.startTimer = function() {
   timerStart = new Date(); timerSec = 0;
-  localStorage.setItem('timerRunning','true');
+  localStorage.setItem('timerRunning', 'true');
   localStorage.setItem('timerStart', timerStart.toISOString());
   document.getElementById('startBtn').disabled = true;
   document.getElementById('stopBtn').disabled  = false;
-  document.getElementById('timerInfo').textContent = `開始: ${fmtTime(timerStart)}`;
+  document.getElementById('timerInfo').textContent = '計測中...';
+  document.getElementById('timerSub').textContent  = `${fmtTime(timerStart)} 〜 ...（計測中）`;
   timerIv = setInterval(tickTimer, 1000);
 };
+
 window.stopTimer = function() {
   clearInterval(timerIv);
   localStorage.removeItem('timerRunning'); localStorage.removeItem('timerStart');
   document.getElementById('startBtn').disabled = false;
   document.getElementById('stopBtn').disabled  = true;
-  selCat = null;
-  document.getElementById('actTitle').value = '';
-  buildCatSel('catSel','selCat',null);
-  openModal('saveModal');
-  setTimeout(() => document.getElementById('actTitle').focus(), 300);
+
+  const catName = document.getElementById('catSelect').value;
+  const memo    = document.getElementById('actMemo').value.trim();
+  if (!catName) { alert('カテゴリーを選択してください'); return; }
+
+  const end = new Date();
+  acts.push({
+    title:     memo || catName,
+    category:  catName,
+    memo:      memo,
+    startTime: timerStart.toISOString(),
+    endTime:   end.toISOString(),
+    duration:  timerSec,
+    date:      timerStart.toISOString()
+  });
+  save();
+
+  if (new Date(timerStart).toDateString() !== viewDate.toDateString()) {
+    viewDate = new Date(timerStart);
+  }
+  timerSec = 0; timerStart = null;
+  document.getElementById('timerDisplay').textContent = '00:00:00';
+  document.getElementById('timerInfo').textContent    = '停止中';
+  document.getElementById('timerSub').textContent     = '';
+  document.getElementById('actMemo').value            = '';
+  renderAll();
 };
+
+window.cancelTimer = function() {
+  clearInterval(timerIv);
+  localStorage.removeItem('timerRunning'); localStorage.removeItem('timerStart');
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('stopBtn').disabled  = true;
+  timerSec = 0; timerStart = null;
+  document.getElementById('timerDisplay').textContent = '00:00:00';
+  document.getElementById('timerInfo').textContent    = '停止中';
+  document.getElementById('timerSub').textContent     = '';
+};
+
 function tickTimer() {
-  if (timerStart) timerSec = Math.floor((Date.now()-timerStart)/1000);
-  const h=Math.floor(timerSec/3600),m=Math.floor((timerSec%3600)/60),s=timerSec%60;
+  if (timerStart) timerSec = Math.floor((Date.now() - timerStart) / 1000);
+  const h=Math.floor(timerSec/3600), m=Math.floor((timerSec%3600)/60), s=timerSec%60;
   document.getElementById('timerDisplay').textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
+
 function restoreTimer() {
-  if (localStorage.getItem('timerRunning')==='true') {
+  if (localStorage.getItem('timerRunning') === 'true') {
     timerStart = new Date(localStorage.getItem('timerStart'));
-    timerSec   = Math.floor((Date.now()-timerStart)/1000);
+    timerSec   = Math.floor((Date.now() - timerStart) / 1000);
     document.getElementById('startBtn').disabled = true;
     document.getElementById('stopBtn').disabled  = false;
-    document.getElementById('timerInfo').textContent = `開始: ${fmtTime(timerStart)}`;
-    timerIv = setInterval(tickTimer,1000); tickTimer();
+    document.getElementById('timerInfo').textContent = '計測中...';
+    document.getElementById('timerSub').textContent  = `${fmtTime(timerStart)} 〜 ...（計測中）`;
+    timerIv = setInterval(tickTimer, 1000); tickTimer();
   }
 }
 
 // ============================================================
-//  SAVE ACTIVITY
-// ============================================================
-window.saveAct = function() {
-  const title = document.getElementById('actTitle').value.trim();
-  if (!title)  { alert('タイトルを入力してください'); return; }
-  if (!selCat) { alert('カテゴリーを選択してください'); return; }
-  const end = new Date();
-  acts.push({ title, category:selCat, startTime:timerStart.toISOString(),
-              endTime:end.toISOString(), duration:timerSec, date:timerStart.toISOString() });
-  save(); closeModal('saveModal');
-  if (new Date(timerStart).toDateString() !== viewDate.toDateString()) {
-    viewDate = new Date(timerStart); updateDateUI();
-  }
-  renderActs();
-  timerSec=0; timerStart=null;
-  document.getElementById('timerDisplay').textContent = '00:00:00';
-  document.getElementById('timerInfo').textContent = 'タイマー停止中';
-};
-window.cancelSave = function() {
-  localStorage.removeItem('timerRunning'); localStorage.removeItem('timerStart');
-  closeModal('saveModal');
-  document.getElementById('timerDisplay').textContent = '00:00:00';
-  document.getElementById('timerInfo').textContent = 'タイマー停止中';
-  timerSec=0; timerStart=null;
-};
-
-// ============================================================
-//  EDIT / DELETE ACTIVITY
+//  EDIT / DELETE
 // ============================================================
 window.editAct = function(idx) {
   editIdx = idx;
-  const a=acts[idx], s=new Date(a.startTime), e=new Date(a.endTime);
-  document.getElementById('editTitle').value = a.title;
+  const a = acts[idx], s = new Date(a.startTime), e = new Date(a.endTime);
+  document.getElementById('editTitle').value = a.memo || (a.title !== a.category ? a.title : '');
   document.getElementById('editStart').value = `${pad(s.getHours())}:${pad(s.getMinutes())}`;
   document.getElementById('editEnd').value   = `${pad(e.getHours())}:${pad(e.getMinutes())}`;
   selEditCat = a.category;
-  buildCatSel('catSelEdit','selEditCat',a.category);
+  buildCatSelEdit(a.category);
   openModal('editModal');
 };
+
 window.saveEdit = function() {
-  const title=document.getElementById('editTitle').value.trim();
-  const sStr=document.getElementById('editStart').value;
-  const eStr=document.getElementById('editEnd').value;
-  if (!title||!sStr||!eStr||!selEditCat) { alert('すべて入力してください'); return; }
-  const base=new Date(acts[editIdx].date);
-  const [sh,sm]=sStr.split(':').map(Number), [eh,em]=eStr.split(':').map(Number);
-  const ns=new Date(base); ns.setHours(sh,sm,0,0);
-  const ne=new Date(base); ne.setHours(eh,em,0,0);
-  if (ne<=ns) { alert('終了時刻は開始より後にしてください'); return; }
-  acts[editIdx]={...acts[editIdx],title,category:selEditCat,
-    startTime:ns.toISOString(),endTime:ne.toISOString(),duration:Math.floor((ne-ns)/1000)};
-  save(); closeModal('editModal'); renderActs(); drawSched();
-};
-window.deleteAct = function(idx) {
-  if (!confirm('この記録を削除しますか？')) return;
-  acts.splice(idx,1); save(); renderActs(); drawSched();
+  const memo = document.getElementById('editTitle').value.trim();
+  const sStr = document.getElementById('editStart').value;
+  const eStr = document.getElementById('editEnd').value;
+  if (!sStr || !eStr || !selEditCat) { alert('すべて入力してください'); return; }
+  const base = new Date(acts[editIdx].date);
+  const [sh,sm] = sStr.split(':').map(Number);
+  const [eh,em] = eStr.split(':').map(Number);
+  const ns = new Date(base); ns.setHours(sh,sm,0,0);
+  const ne = new Date(base); ne.setHours(eh,em,0,0);
+  if (ne <= ns) { alert('終了時刻は開始より後にしてください'); return; }
+  acts[editIdx] = {
+    ...acts[editIdx],
+    title: memo || selEditCat,
+    category: selEditCat,
+    memo,
+    startTime: ns.toISOString(),
+    endTime:   ne.toISOString(),
+    duration:  Math.floor((ne - ns) / 1000)
+  };
+  save(); closeModal('editModal'); renderAll();
 };
 
+window.deleteAct = function(idx) {
+  if (!confirm('この記録を削除しますか？')) return;
+  acts.splice(idx, 1); save(); renderAll();
+};
+
+function buildCatSelEdit(selected) {
+  document.getElementById('catSelEdit').innerHTML = cats.map(c => {
+    const isSel = c.name === selected;
+    return `<button class="cat-sel-btn ${isSel?'sel':''}"
+      style="border-color:${isSel?c.color:'transparent'};background:${isSel?c.color+'22':'var(--bg)'};"
+      onclick="pickEditCat('${c.name.replace(/'/g,"\\'")}')">
+      <span class="dot" style="background:${c.color}"></span>${c.name}
+    </button>`;
+  }).join('');
+}
+window.pickEditCat = function(name) { selEditCat = name; buildCatSelEdit(name); };
+
 // ============================================================
-//  RENDER ACTIVITIES
+//  RENDER: RECORDS LIST
 // ============================================================
 function renderActs() {
   const el   = document.getElementById('actList');
-  const list = actsForDate(viewDate).sort((a,b)=>new Date(a.startTime)-new Date(b.startTime));
-  if (!list.length) { el.innerHTML='<div class="empty">📭 この日の記録はありません</div>'; return; }
+  const list = actsForDate(viewDate).sort((a,b) => new Date(a.startTime) - new Date(b.startTime));
+  document.getElementById('recHeader').textContent = `記録一覧（${list.length}件）`;
+  if (!list.length) { el.innerHTML = '<div class="empty">この日の記録はありません</div>'; return; }
   el.innerHTML = list.map(a => {
-    const gi  = acts.findIndex(x=>x.startTime===a.startTime&&x.title===a.title);
+    const gi  = acts.findIndex(x => x.startTime === a.startTime && x.title === a.title);
     const cat = getCat(a.category);
-    const s=new Date(a.startTime),e=new Date(a.endTime);
-    return `<div class="act-item">
-      <div class="act-bar" style="background:${cat.color}"></div>
-      <div class="act-info">
-        <div class="act-title">${cat.emoji} ${a.title}</div>
-        <div class="act-meta">${fmtTime(s)}〜${fmtTime(e)} · ${fmtDur(a.duration)} · ${a.category}</div>
+    const s   = new Date(a.startTime), e = new Date(a.endTime);
+    const desc = a.memo || (a.title !== a.category ? a.title : '');
+    return `<div class="rec-item">
+      <span class="dot dot-lg rec-dot" style="background:${cat.color}"></span>
+      <div class="rec-body">
+        <div class="rec-title">
+          <b>${a.category}</b>
+          <span class="rec-time">${fmtTime(s)} - ${fmtTime(e)}</span>
+        </div>
+        ${desc ? `<div class="rec-memo">${desc}</div>` : ''}
       </div>
-      <div class="act-actions">
-        <button class="icon-btn" style="background:#FFF3E0" onclick="editAct(${gi})">✏️</button>
-        <button class="icon-btn" style="background:#FFF0F0" onclick="deleteAct(${gi})">🗑️</button>
+      <div class="rec-dur">${fmtShort(a.duration)}</div>
+      <div class="rec-actions">
+        <button class="icon-btn" style="background:#EFF6FF;color:#3B82F6;" onclick="editAct(${gi})">&#9998;</button>
+        <button class="icon-btn" style="background:#FEF2F2;color:#EF4444;" onclick="deleteAct(${gi})">&#10005;</button>
       </div>
     </div>`;
   }).join('');
 }
 
 // ============================================================
-//  CATEGORY SELECTOR
+//  RENDER: TODAY SUMMARY CARDS
 // ============================================================
-function buildCatSel(containerId, stateVar, selected) {
-  const el = document.getElementById(containerId);
-  el.innerHTML = cats.map(c => {
-    const isSel = c.name===selected;
-    return `<button class="cat-btn ${isSel?'sel':''}"
-      style="border-color:${isSel?c.color:'transparent'};background:${isSel?c.color+'22':'var(--bg)'};"
-      onclick="pickCat('${containerId}','${c.name.replace(/'/g,"\\'")}')">
-      <span class="cat-icon">${c.emoji}</span>
-      <span class="cat-name">${c.name}</span>
-    </button>`;
+function renderSummary() {
+  const list  = actsForDate(viewDate);
+  const total = list.reduce((s,a) => s + a.duration, 0);
+  document.getElementById('summaryTotal').textContent =
+    total > 0 ? `合計: ${(total/3600).toFixed(1)}h (${Math.floor(total/60)}分)` : '合計: 0分';
+
+  const runCat = timerStart ? document.getElementById('catSelect').value : null;
+  document.getElementById('catCardsGrid').innerHTML = cats.map(c => {
+    const dur = list.filter(a => a.category === c.name).reduce((s,a) => s + a.duration, 0);
+    const isR = runCat === c.name;
+    return `<div class="cat-card">
+      <div class="cat-card-name"><span class="dot" style="background:${c.color}"></span>${c.name}</div>
+      <div class="cat-card-val">${fmtShort(dur)}</div>
+      <div class="cat-card-sub">${isR ? '<span class="running-badge">実行中</span>' : Math.floor(dur/60)+'分'}</div>
+    </div>`;
   }).join('');
 }
-window.pickCat = function(containerId, name) {
-  if (containerId==='catSel')     { selCat=name;     buildCatSel('catSel','selCat',name); }
-  else                            { selEditCat=name;  buildCatSel('catSelEdit','selEditCat',name); }
-};
 
 // ============================================================
-//  CATEGORY MANAGEMENT
+//  RENDER: BAR CHART
+// ============================================================
+function renderBars() {
+  const list   = getActsForTab();
+  const maxDur = cats.reduce((mx,c) => {
+    const d = list.filter(a => a.category === c.name).reduce((s,a) => s + a.duration, 0);
+    return Math.max(mx, d);
+  }, 1);
+  const runCat = timerStart ? document.getElementById('catSelect').value : null;
+  document.getElementById('barList').innerHTML = cats.map(c => {
+    const dur = list.filter(a => a.category === c.name).reduce((s,a) => s + a.duration, 0);
+    const pct = Math.min((dur / maxDur) * 100, 100);
+    const isR = runCat === c.name;
+    const val = isR
+      ? `<span class="bar-running">${Math.floor(timerSec/60)}分実行中</span>`
+      : fmtShort(dur);
+    return `<div class="bar-row">
+      <div class="bar-row-hd">
+        <span class="bar-name">${c.name}</span>
+        <span class="bar-val">${val}</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${c.color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderCatCards2() {
+  const list  = getActsForTab();
+  const runCat = timerStart ? document.getElementById('catSelect').value : null;
+  document.getElementById('catCardsGrid2').innerHTML = cats.map(c => {
+    const dur = list.filter(a => a.category === c.name).reduce((s,a) => s + a.duration, 0);
+    const isR = runCat === c.name;
+    return `<div class="cat-card">
+      <div class="cat-card-name"><span class="dot" style="background:${c.color}"></span>${c.name}</div>
+      <div class="cat-card-val">${fmtShort(dur)}</div>
+      <div class="cat-card-sub">${isR ? '<span class="running-badge">実行中</span>' : Math.floor(dur/60)+'分'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+//  RENDER: TIMELINE (HTML divs)
+// ============================================================
+function renderTimeline() {
+  const TL_H  = 600;
+  const hourH = TL_H / 24;
+  const labels = document.getElementById('tlLabels');
+  const body   = document.getElementById('tlBody');
+  labels.style.height = body.style.height = TL_H + 'px';
+
+  let lHtml = '';
+  for (let h = 0; h <= 24; h++) {
+    lHtml += `<div class="tl-label" style="top:${h * hourH}px">${pad(h)}:00</div>`;
+  }
+  labels.innerHTML = lHtml;
+
+  let bHtml = '';
+  for (let h = 0; h <= 24; h++) {
+    bHtml += `<div class="tl-line" style="top:${h * hourH}px"></div>`;
+  }
+
+  const list = actsForDate(viewDate).sort((a,b) => new Date(a.startTime) - new Date(b.startTime));
+  list.forEach(a => {
+    const s   = new Date(a.startTime), e = new Date(a.endTime);
+    const sy  = (s.getHours() + s.getMinutes() / 60) * hourH;
+    const ey  = (e.getHours() + e.getMinutes() / 60) * hourH;
+    const bh  = Math.max(ey - sy, 4);
+    const cat = getCat(a.category);
+    const gi  = acts.findIndex(x => x.startTime === a.startTime && x.title === a.title);
+    bHtml += `<div class="tl-block" style="top:${sy}px;height:${bh}px;background:${cat.color};" onclick="editAct(${gi})">
+      ${bh > 16 ? `<div class="tl-block-name">${a.category}</div>` : ''}
+      ${bh > 30 ? `<div class="tl-block-time">${fmtTime(s)}〜${fmtTime(e)}</div>` : ''}
+    </div>`;
+  });
+
+  // Current time indicator
+  const now = new Date();
+  if (now.toDateString() === viewDate.toDateString()) {
+    const ny = (now.getHours() + now.getMinutes() / 60) * hourH;
+    bHtml += `<div class="tl-now" style="top:${ny}px"></div>`;
+  }
+  body.innerHTML = bHtml;
+}
+
+// ============================================================
+//  RENDER: CATEGORY SELECT (dropdown)
+// ============================================================
+function renderCatSelect() {
+  const sel  = document.getElementById('catSelect');
+  const prev = sel.value;
+  sel.innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  if (prev && cats.find(c => c.name === prev)) sel.value = prev;
+}
+
+// ============================================================
+//  RENDER: CATEGORY MANAGEMENT
 // ============================================================
 function renderCatManage() {
-  const el = document.getElementById('catManageList');
-  el.innerHTML = cats.map((c,i) => `
-    <div class="set-row">
-      <span class="set-icon">${c.emoji}</span>
-      <span class="set-label">${c.name}</span>
-      <div style="width:18px;height:18px;border-radius:50%;background:${c.color};margin-right:8px;flex-shrink:0;"></div>
+  document.getElementById('catManageList').innerHTML = cats.map((c, i) => `
+    <div class="cat-manage-row">
+      <span class="dot dot-lg" style="background:${c.color}"></span>
+      <span class="cat-manage-name">${c.name}</span>
+      <span class="cat-badge">${i < DEFAULT_CATS.length ? '標準' : ''}</span>
       ${i >= DEFAULT_CATS.length
-        ? `<button class="icon-btn" style="background:#FFF0F0;" onclick="delCat(${i})">🗑️</button>`
-        : `<span style="font-size:11px;color:var(--sub);">標準</span>`}
+        ? `<button class="icon-btn" style="background:#FEF2F2;color:#EF4444;" onclick="delCat(${i})">&#10005;</button>`
+        : ''}
     </div>`).join('');
 }
-window.openAddCat = function() {
-  document.getElementById('newEmoji').value   = '';
-  document.getElementById('newCatName').value = '';
-  selColor = PRESET_COLORS[Math.floor(Math.random()*PRESET_COLORS.length)];
-  buildSwatches();
-  openModal('addCatModal');
-};
+
+function buildSwatches() {
+  document.getElementById('swatchRow').innerHTML = PRESET_COLORS.map(c =>
+    `<div class="swatch ${c === selColor ? 'sel' : ''}" style="background:${c};" onclick="pickColor('${c}')"></div>`
+  ).join('');
+}
+window.pickColor = function(c) { selColor = c; buildSwatches(); };
+
 window.addCat = function() {
-  const emoji=document.getElementById('newEmoji').value.trim();
-  const name=document.getElementById('newCatName').value.trim();
-  if (!emoji||!name) { alert('絵文字とカテゴリー名を入力してください'); return; }
-  if (cats.find(c=>c.name===name)) { alert('同じ名前のカテゴリーがすでにあります'); return; }
-  cats.push({name,emoji,color:selColor});
-  save(); closeModal('addCatModal'); renderCatManage();
+  const name = document.getElementById('newCatName').value.trim();
+  if (!name) { alert('カテゴリー名を入力してください'); return; }
+  if (cats.find(c => c.name === name)) { alert('同じ名前のカテゴリーがすでにあります'); return; }
+  cats.push({ name, color: selColor });
+  document.getElementById('newCatName').value = '';
+  save(); renderCatManage(); renderCatSelect(); renderAll();
 };
+
 window.delCat = function(i) {
   if (!confirm(`「${cats[i].name}」を削除しますか？`)) return;
-  cats.splice(i,1); save(); renderCatManage();
+  cats.splice(i, 1); save(); renderCatManage(); renderCatSelect(); renderAll();
 };
-function buildSwatches() {
-  document.getElementById('swatchRow').innerHTML = PRESET_COLORS.map(c=>`
-    <div class="swatch ${c===selColor?'sel':''}" style="background:${c};" onclick="pickColor('${c}')"></div>
-  `).join('');
-}
-window.pickColor = function(c) { selColor=c; buildSwatches(); };
-
-// ============================================================
-//  SCHEDULE CANVAS
-// ============================================================
-function drawSched() {
-  const canvas=document.getElementById('schedCanvas');
-  const wrap=canvas.parentElement;
-  if (!wrap||!wrap.offsetWidth) return;
-  const dpr=window.devicePixelRatio||1;
-  const lw=wrap.offsetWidth-20, lh=lw*2.2;
-  canvas.width=lw*dpr; canvas.height=lh*dpr;
-  canvas.style.width=lw+'px'; canvas.style.height=lh+'px';
-  const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
-  const W=lw,H=lh,ML=44,MR=8,MT=10,MB=10;
-  const cW=W-ML-MR,cH=H-MT-MB,hH=cH/24;
-
-  ctx.fillStyle='#FAFAFA'; ctx.fillRect(0,0,W,H);
-
-  ctx.font=`${Math.max(9,Math.floor(hH*0.42))}px -apple-system,sans-serif`;
-  ctx.textAlign='right';
-  for (let h=0;h<=24;h++) {
-    const y=MT+h*hH;
-    ctx.strokeStyle='#E5E5EA'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(ML,y); ctx.lineTo(W-MR,y); ctx.stroke();
-    if (h<24) {
-      ctx.fillStyle='#8E8E93';
-      ctx.fillText(`${pad(h)}`,ML-5,y+hH*0.45);
-      ctx.strokeStyle='#F2F2F7'; ctx.lineWidth=0.5;
-      ctx.beginPath(); ctx.moveTo(ML,y+hH/2); ctx.lineTo(W-MR,y+hH/2); ctx.stroke();
-    }
-  }
-  actRegions=[];
-  actsForDate(viewDate).forEach(a => {
-    const s=new Date(a.startTime),e=new Date(a.endTime);
-    const sy=MT+(s.getHours()+s.getMinutes()/60)*hH;
-    const ey=MT+(e.getHours()+e.getMinutes()/60)*hH;
-    const bh=Math.max(ey-sy,3);
-    const cat=getCat(a.category);
-    ctx.fillStyle=cat.color+'CC';
-    rr(ctx,ML+2,sy,cW-4,bh,6); ctx.fill();
-    ctx.strokeStyle=cat.color; ctx.lineWidth=1.5;
-    rr(ctx,ML+2,sy,cW-4,bh,6); ctx.stroke();
-    actRegions.push({x:ML+2,y:sy,w:cW-4,h:bh,a});
-    if (bh>18) {
-      ctx.textAlign='left';
-      const fs=Math.min(12,bh*0.38);
-      ctx.font=`600 ${fs}px -apple-system,sans-serif`;
-      ctx.fillStyle='#1C1C1E';
-      ctx.fillText(bh>32?`${cat.emoji} ${a.title}`:a.title,ML+8,sy+Math.min(fs+2,bh*0.58));
-      if (bh>36) {
-        ctx.font=`${Math.min(10,bh*0.28)}px -apple-system,sans-serif`;
-        ctx.fillStyle='#555';
-        ctx.fillText(`${fmtTime(s)}〜${fmtTime(e)}`,ML+8,sy+bh*0.78);
-      }
-    }
-  });
-  renderLegend();
-}
-function rr(ctx,x,y,w,h,r) {
-  r=Math.min(r,h/2,w/2);
-  ctx.beginPath();
-  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
-  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
-  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
-  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
-}
-function renderLegend() {
-  const el=document.getElementById('legendWrap');
-  const used=[...new Set(actsForDate(viewDate).map(a=>a.category))];
-  el.innerHTML=used.map(name=>{const c=getCat(name);
-    return `<span class="legend-tag" style="background:${c.color}22;color:${c.color};border:1px solid ${c.color}55;">${c.emoji} ${c.name}</span>`;
-  }).join('');
-}
-
-// Canvas tooltip
-const tooltip=document.getElementById('tooltip');
-document.getElementById('schedCanvas').addEventListener('mousemove',e=>{
-  const rect=document.getElementById('schedCanvas').getBoundingClientRect();
-  const x=e.clientX-rect.left,y=e.clientY-rect.top;
-  let hit=false;
-  for (const r of actRegions) {
-    if (x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h) {
-      const s=new Date(r.a.startTime),en=new Date(r.a.endTime),c=getCat(r.a.category);
-      tooltip.innerHTML=`<b>${c.emoji} ${r.a.title}</b><br>${fmtTime(s)}〜${fmtTime(en)}<br>${fmtDur(r.a.duration)}`;
-      tooltip.style.cssText=`display:block;left:${e.clientX+14}px;top:${e.clientY+14}px;`;
-      hit=true; document.getElementById('schedCanvas').style.cursor='pointer'; break;
-    }
-  }
-  if (!hit){tooltip.style.display='none';document.getElementById('schedCanvas').style.cursor='default';}
-});
-document.getElementById('schedCanvas').addEventListener('mouseleave',()=>{tooltip.style.display='none';});
-document.getElementById('schedCanvas').addEventListener('touchstart',e=>{
-  const t=e.touches[0],rect=document.getElementById('schedCanvas').getBoundingClientRect();
-  const x=t.clientX-rect.left,y=t.clientY-rect.top;
-  for (const r of actRegions) {
-    if (x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h) {
-      const s=new Date(r.a.startTime),en=new Date(r.a.endTime),c=getCat(r.a.category);
-      tooltip.innerHTML=`<b>${c.emoji} ${r.a.title}</b><br>${fmtTime(s)}〜${fmtTime(en)}<br>${fmtDur(r.a.duration)}`;
-      tooltip.style.cssText=`display:block;left:${t.clientX+10}px;top:${t.clientY-70}px;`;
-      setTimeout(()=>{tooltip.style.display='none';},2500); break;
-    }
-  }
-});
 
 // ============================================================
 //  EXPORT IMAGE
 // ============================================================
 window.exportImg = function() {
-  drawSched();
-  const c=document.getElementById('schedCanvas'),a=document.createElement('a');
-  a.download=`行動記録_${viewDate.getFullYear()}${pad(viewDate.getMonth()+1)}${pad(viewDate.getDate())}.png`;
-  a.href=c.toDataURL('image/png'); a.click();
+  const canvas = document.getElementById('schedCanvas');
+  const TL_H = 600, hourH = TL_H / 24;
+  const W = 800, ML = 60, MR = 20, MT = 10;
+  const cW = W - ML - MR;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = W * dpr;
+  canvas.height = (TL_H + MT * 2) * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = (TL_H + MT * 2) + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.fillStyle = '#F3F4F6'; ctx.fillRect(0, 0, W, TL_H + MT * 2);
+  for (let h = 0; h <= 24; h++) {
+    const y = MT + h * hourH;
+    ctx.strokeStyle = '#E5E7EB'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ML, y); ctx.lineTo(W - MR, y); ctx.stroke();
+    if (h < 24) {
+      ctx.fillStyle = '#9CA3AF'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
+      ctx.fillText(pad(h) + ':00', ML - 5, y + hourH * 0.5);
+    }
+  }
+  actsForDate(viewDate).forEach(a => {
+    const s = new Date(a.startTime), e = new Date(a.endTime);
+    const sy = MT + (s.getHours() + s.getMinutes() / 60) * hourH;
+    const ey = MT + (e.getHours() + e.getMinutes() / 60) * hourH;
+    const bh = Math.max(ey - sy, 4);
+    const cat = getCat(a.category);
+    ctx.fillStyle = cat.color;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(ML + 2, sy, cW - 4, bh, 6);
+    else ctx.rect(ML + 2, sy, cW - 4, bh);
+    ctx.fill();
+    if (bh > 16) {
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText(a.category, ML + 8, sy + Math.min(16, bh * 0.65));
+    }
+  });
+  const link = document.createElement('a');
+  link.download = `timeline_${viewDate.getFullYear()}${pad(viewDate.getMonth()+1)}${pad(viewDate.getDate())}.png`;
+  link.href = canvas.toDataURL('image/png'); link.click();
 };
 
 // ============================================================
 //  DATA IMPORT / EXPORT
 // ============================================================
 window.exportData = function() {
-  const blob=new Blob([JSON.stringify({acts,cats,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
-  const a=document.createElement('a');
-  a.download=`行動記録_backup_${new Date().toLocaleDateString('ja-JP')}.json`;
-  a.href=URL.createObjectURL(blob); a.click(); URL.revokeObjectURL(a.href);
+  const blob = new Blob(
+    [JSON.stringify({ acts, cats, exportedAt: new Date().toISOString() }, null, 2)],
+    { type: 'application/json' }
+  );
+  const a = document.createElement('a');
+  a.download = `行動記録_backup_${new Date().toLocaleDateString('ja-JP')}.json`;
+  a.href = URL.createObjectURL(blob); a.click(); URL.revokeObjectURL(a.href);
 };
+
 window.importData = function() { document.getElementById('importFile').click(); };
+
 window.handleImport = function(e) {
-  const file=e.target.files[0]; if (!file) return;
-  const r=new FileReader();
-  r.onload=ev=>{
+  const file = e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
     try {
-      const d=JSON.parse(ev.target.result);
-      if (d.acts) acts=d.acts;
-      if (d.cats) cats=d.cats;
-      save(); renderActs(); renderCatManage(); drawSched();
-      closeModal('dataModal'); alert('インポート完了！');
+      const d = JSON.parse(ev.target.result);
+      if (d.acts) acts = d.acts;
+      if (d.cats) cats = d.cats.map(c => ({ name: c.name, color: c.color || '#9CA3AF' }));
+      save(); renderAll(); closeModal('dataModal'); alert('インポート完了！');
     } catch { alert('ファイルの読み込みに失敗しました'); }
   };
-  r.readAsText(file); e.target.value='';
+  r.readAsText(file); e.target.value = '';
 };
+
 window.clearAll = function() {
   if (!confirm('全データを削除しますか？この操作は取り消せません。')) return;
-  acts=[]; cats=structuredClone(DEFAULT_CATS);
-  save(); renderActs(); renderCatManage(); drawSched();
-  closeModal('dataModal');
+  acts = []; cats = structuredClone(DEFAULT_CATS);
+  save(); renderAll(); closeModal('dataModal');
 };
+
+// ============================================================
+//  RENDER ALL
+// ============================================================
+function renderAll() {
+  updateDateUI();
+  renderActs();
+  renderSummary();
+  renderBars();
+  renderCatCards2();
+  renderTimeline();
+  renderCatManage();
+  renderCatSelect();
+}
 
 // ============================================================
 //  INIT
 // ============================================================
 function initUI() {
-  updateDateUI(); renderActs(); renderCatManage(); restoreTimer();
-  setTimeout(drawSched, 100); // draw after layout settles
-  window.addEventListener('resize', drawSched);
+  renderAll();
+  restoreTimer();
+  buildSwatches();
+  window.addEventListener('resize', renderTimeline);
 }
 
 // Start
