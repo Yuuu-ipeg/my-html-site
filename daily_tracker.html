@@ -422,7 +422,7 @@
             <input class="inp" id="newCatName" placeholder="&#20363;: &#35501;&#26360;" style="flex:1;">
             <button class="btn btn-primary" onclick="addCat()" style="flex:none;padding:9px 16px;">+ &#36861;&#21152;</button>
           </div>
-          <div class="inp-label">&#33394;&#12434;&#36984;&#25246;</div>
+          <div class="inp-label">&#33394;&#12434;&#36984;&#25246;<span id="autoColorNote" style="font-weight:400;color:var(--sub);margin-left:6px;">&#65288;&#26410;&#36984;&#25246;&#12394;&#12425;&#33258;&#21205;&#65289;</span></div>
           <div class="swatch-row" id="swatchRow"></div>
         </div>
       </div>
@@ -524,6 +524,7 @@ let acts = [], cats = [];
 let viewDate = new Date();
 let timerIv = null, timerStart = null, timerSec = 0;
 let editIdx = null, selEditCat = null, selColor = PRESET_COLORS[0];
+let userSelectedColor = false; // 色を手動選択したかどうか
 let statTab = 'day';
 const isFirebaseConfigured = () => firebaseConfig.apiKey !== 'YOUR_API_KEY';
 
@@ -990,11 +991,11 @@ function renderTimeline() {
     const s   = new Date(a.startTime), e = new Date(a.endTime);
     const sy  = (s.getHours() + s.getMinutes() / 60) * hourH;
     const ey  = (e.getHours() + e.getMinutes() / 60) * hourH;
-    const bh  = Math.max(ey - sy, 4);
+    const bh  = Math.max(ey - sy, 20);
     const cat = getCat(a.category);
     const gi  = acts.findIndex(x => x.startTime === a.startTime && x.title === a.title);
     bHtml += `<div class="tl-block" style="top:${sy}px;height:${bh}px;background:${cat.color};" onclick="editAct(${gi})">
-      ${bh > 16 ? `<div class="tl-block-name">${a.category}</div>` : ''}
+      <div class="tl-block-name">${a.category}</div>
       ${bh > 30 ? `<div class="tl-block-time">${fmtTime(s)}〜${fmtTime(e)}</div>` : ''}
     </div>`;
   });
@@ -1035,17 +1036,30 @@ function renderCatManage() {
 
 function buildSwatches() {
   document.getElementById('swatchRow').innerHTML = PRESET_COLORS.map(c =>
-    `<div class="swatch ${c === selColor ? 'sel' : ''}" style="background:${c};" onclick="pickColor('${c}')"></div>`
+    `<div class="swatch ${(userSelectedColor && c === selColor) ? 'sel' : ''}" style="background:${c};" onclick="pickColor('${c}')"></div>`
   ).join('');
 }
-window.pickColor = function(c) { selColor = c; buildSwatches(); };
+window.pickColor = function(c) { selColor = c; userSelectedColor = true; buildSwatches(); };
 
 window.addCat = function() {
   const name = document.getElementById('newCatName').value.trim();
   if (!name) { alert('カテゴリー名を入力してください'); return; }
   if (cats.find(c => c.name === name)) { alert('同じ名前のカテゴリーがすでにあります'); return; }
-  cats.push({ name, color: selColor });
+
+  let color;
+  if (userSelectedColor) {
+    color = selColor;
+  } else {
+    // 既存カテゴリーで使われていない色を自動選択
+    const usedColors = new Set(cats.map(c => c.color));
+    color = PRESET_COLORS.find(c => !usedColors.has(c)) ?? PRESET_COLORS[cats.length % PRESET_COLORS.length];
+  }
+
+  cats.push({ name, color });
   document.getElementById('newCatName').value = '';
+  // 選択状態をリセット
+  userSelectedColor = false;
+  selColor = PRESET_COLORS[0];
   save(); renderCatManage(); renderCatSelect(); renderAll();
 };
 
