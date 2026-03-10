@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 画像・文章アナライザー</title>
+    <style>
+        :root {
+            --primary: #6C63FF;
+            --primary-dark: #574fd6;
+            --secondary: #FF6584;
+            --bg: #0f0f1a;
+            --surface: #1a1a2e;
+            --surface2: #16213e;
+            --text: #e8e8f0;
+            --text-muted: #8888aa;
+            --border: #2a2a4a;
+            --success: #43e97b;
+            --warning: #fa8231;
+            --radius: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1a3e 0%, #0f0f2a 100%);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 4px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .header h1 {
+            font-size: clamp(18px, 4vw, 24px);
+            font-weight: 700;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* API Key Banner */
+        .api-banner {
+            background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(255,101,132,0.15));
+            border: 1px solid rgba(108,99,255,0.3);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .api-banner.hidden { display: none; }
+
+        .api-banner-icon { font-size: 24px; flex-shrink: 0; }
+
+        .api-banner-content h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #a78bfa;
+            margin-bottom: 4px;
+        }
+
+        .api-banner-content p {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Main Content */
+        .main {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 16px;
+            padding-bottom: 40px;
+        }
+
+        /* Card */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .card-icon.purple { background: rgba(108,99,255,0.2); }
+        .card-icon.pink { background: rgba(255,101,132,0.2); }
+        .card-icon.green { background: rgba(67,233,123,0.2); }
+        .card-icon.blue { background: rgba(96,165,250,0.2); }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .card-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* API Key Input */
+        .input-group {
+            position: relative;
+        }
+
+        .input-field {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 50px 14px 16px;
+            font-size: 14px;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: monospace;
+        }
+
+        .input-field:focus {
+            border-color: var(--primary);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+            font-family: -apple-system, sans-serif;
+        }
+
+        .input-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+        }
+
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        .status-dot.connected { background: var(--success); }
+        .status-dot.error { background: var(--secondary); }
+
+        /* Image Upload */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--surface2);
+            position: relative;
+        }
+
+        .upload-area:hover, .upload-area.drag-over {
+            border-color: var(--primary);
+            background: rgba(108,99,255,0.05);
+        }
+
+        .upload-area input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .upload-text {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .upload-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Camera buttons */
+        .camera-btns {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .cam-btn {
+            flex: 1;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            color: var(--text);
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .cam-btn:hover {
+            border-color: var(--primary);
+            background: rgba(108,99,255,0.1);
+        }
+
+        /* Image Preview */
+        .image-preview {
+            display: none;
+            position: relative;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--surface2);
+        }
+
+        .image-preview img {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .image-remove {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Text Input */
+        .text-area {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 14px;
+            color: var(--text);
+            outline: none;
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+            line-height: 1.6;
+            transition: border-color 0.2s;
+        }
+
+        .text-area:focus {
+            border-color: var(--primary);
+        }
+
+        .text-area::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Analysis Mode */
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        @media (min-width: 480px) {
+            .mode-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        .mode-btn {
+            background: var(--surface2);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            color: var(--text);
+        }
+
+        .mode-btn:hover {
+            border-color: var(--primary);
+            background: rgba(108,99,255,0.1);
+        }
+
+        .mode-btn.active {
+            border-color: var(--primary);
+            background: rgba(108,99,255,0.15);
+        }
+
+        .mode-btn.active .mode-icon {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .mode-icon { font-size: 24px; display: block; margin-bottom: 6px; }
+        .mode-name { font-size: 12px; font-weight: 600; }
+        .mode-desc { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+        /* Analyze Button */
+        .analyze-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            border: none;
+            border-radius: var(--radius);
+            padding: 18px;
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(108,99,255,0.3);
+        }
+
+        .analyze-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(108,99,255,0.4);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .analyze-btn.loading {
+            background: linear-gradient(135deg, #574fd6, #7c3aed);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Results */
+        .result-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .result-card.visible { display: block; }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .result-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .result-badge {
+            background: linear-gradient(135deg, rgba(108,99,255,0.2), rgba(255,101,132,0.2));
+            border: 1px solid rgba(108,99,255,0.3);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 11px;
+            color: #a78bfa;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 14px;
+            color: var(--text-muted);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .action-btn:hover {
+            border-color: var(--primary);
+            color: var(--text);
+        }
+
+        .result-content {
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text);
+        }
+
+        .result-content h2, .result-content h3 {
+            color: #a78bfa;
+            margin: 20px 0 10px;
+            font-size: 16px;
+        }
+
+        .result-content h2:first-child, .result-content h3:first-child {
+            margin-top: 0;
+        }
+
+        .result-content ul, .result-content ol {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+
+        .result-content li {
+            margin-bottom: 6px;
+        }
+
+        .result-content strong {
+            color: #60a5fa;
+        }
+
+        .result-content em {
+            color: #34d399;
+            font-style: normal;
+        }
+
+        .result-content p { margin-bottom: 10px; }
+
+        .result-content code {
+            background: rgba(108,99,255,0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .result-content blockquote {
+            border-left: 3px solid var(--primary);
+            padding: 8px 16px;
+            margin: 12px 0;
+            background: rgba(108,99,255,0.05);
+            border-radius: 0 8px 8px 0;
+        }
+
+        /* History */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-item {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .history-item:hover {
+            border-color: var(--primary);
+        }
+
+        .history-thumb {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .history-thumb-placeholder {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            background: rgba(108,99,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .history-info { flex: 1; min-width: 0; }
+
+        .history-mode {
+            font-size: 11px;
+            color: #a78bfa;
+            margin-bottom: 2px;
+        }
+
+        .history-question {
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-time {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .history-empty {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+        }
+
+        /* Bottom padding for mobile */
+        .bottom-space { height: 20px; }
+
+        /* Floating notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 14px;
+            z-index: 1000;
+            transition: transform 0.3s;
+            white-space: nowrap;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+        .toast.error { border-color: var(--secondary); color: var(--secondary); }
+
+        /* Loading overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15,15,26,0.8);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .loading-overlay.visible { display: flex; }
+
+        .loading-orb {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            animation: pulse 1.5s ease-in-out infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .loading-text {
+            font-size: 16px;
+            color: var(--text);
+            text-align: center;
+        }
+
+        .loading-steps {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* Section divider */
+        .section-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 6px 0 16px;
+        }
+
+        .divider-line {
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .divider-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .header { padding: 14px 16px; }
+            .main { padding: 12px; }
+            .card { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-orb">🧠</div>
+    <div class="loading-text">AIが解析中...</div>
+    <div class="loading-steps" id="loadingStep">画像と文章を読み込んでいます</div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast" id="toast"></div>
+
+<!-- Header -->
+<div class="header">
+    <div class="header-logo">
+        <div class="logo-icon">🔍</div>
+        <h1>AI アナライザー</h1>
+    </div>
+    <div class="header-subtitle">画像・文章をAIで深く理解する</div>
+</div>
+
+<!-- API Key Banner -->
+<div class="api-banner" id="apiBanner">
+    <div class="api-banner-icon">🔑</div>
+    <div class="api-banner-content">
+        <h3>Anthropic API キーが必要です</h3>
+        <p>このツールはAnthropicのClaude AIを使用します。<br>
+        <a href="https://console.anthropic.com/api-keys" target="_blank" style="color: #a78bfa;">console.anthropic.com</a> でAPIキーを取得し、下の設定に入力してください。</p>
+    </div>
+</div>
+
+<div class="main">
+
+    <!-- API Key Card -->
+    <div class="card" id="apiCard">
+        <div class="card-header">
+            <div class="card-icon purple">🔑</div>
+            <div>
+                <div class="card-title">API キー設定</div>
+                <div class="card-subtitle">一度設定すれば保存されます</div>
+            </div>
+        </div>
+        <div class="input-group">
+            <input type="password" class="input-field" id="apiKeyInput"
+                placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+            <button class="input-toggle" id="toggleApiKey" onclick="toggleApiVisibility()">👁</button>
+        </div>
+        <div class="api-status">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText" style="color: var(--text-muted);">未設定</span>
+        </div>
+    </div>
+
+    <!-- Image Upload Card -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon pink">🖼️</div>
+            <div>
+                <div class="card-title">画像をアップロード</div>
+                <div class="card-subtitle">カメラ撮影またはファイル選択（任意）</div>
+            </div>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+            <span class="upload-icon">📷</span>
+            <div class="upload-text">画像をタップして選択</div>
+            <div class="upload-hint">JPG, PNG, GIF, WebP 対応</div>
+        </div>
+
+        <div class="camera-btns">
+            <button class="cam-btn" onclick="document.getElementById('cameraInput').click()">
+                <span>📸</span> カメラで撮影
+            </button>
+            <button class="cam-btn" onclick="document.getElementById('fileInput').click()">
+                <span>📁</span> ファイルを選択
+            </button>
+        </div>
+        <input type="file" id="cameraInput" accept="image/*" capture="environment"
+            onchange="handleFileSelect(event)" style="display:none">
+
+        <div style="margin-top: 14px;">
+            <div class="image-preview" id="imagePreview">
+                <img id="previewImg" src="" alt="プレビュー">
+                <button class="image-remove" onclick="removeImage()">✕</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Text Input Card -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon blue">✏️</div>
+            <div>
+                <div class="card-title">質問・テキスト入力</div>
+                <div class="card-subtitle">分析したい内容や質問を入力</div>
+            </div>
+        </div>
+        <textarea class="text-area" id="textInput"
+            placeholder="例: この画像に何が写っていますか？&#10;例: この文章の要点を教えてください&#10;例: もっと深く分析してください"></textarea>
+    </div>
+
+    <!-- Analysis Mode Card -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon green">⚡</div>
+            <div>
+                <div class="card-title">分析モード</div>
+                <div class="card-subtitle">どのように分析するか選んでください</div>
+            </div>
+        </div>
+        <div class="mode-grid">
+            <div class="mode-btn active" data-mode="explain" onclick="selectMode(this)">
+                <span class="mode-icon">🔬</span>
+                <div class="mode-name">詳細解説</div>
+                <div class="mode-desc">わかりやすく説明</div>
+            </div>
+            <div class="mode-btn" data-mode="summary" onclick="selectMode(this)">
+                <span class="mode-icon">📝</span>
+                <div class="mode-name">要約</div>
+                <div class="mode-desc">重要点を抽出</div>
+            </div>
+            <div class="mode-btn" data-mode="critical" onclick="selectMode(this)">
+                <span class="mode-icon">🧐</span>
+                <div class="mode-name">批判的分析</div>
+                <div class="mode-desc">問題点を指摘</div>
+            </div>
+            <div class="mode-btn" data-mode="creative" onclick="selectMode(this)">
+                <span class="mode-icon">💡</span>
+                <div class="mode-name">アイデア創出</div>
+                <div class="mode-desc">新たな視点</div>
+            </div>
+            <div class="mode-btn" data-mode="study" onclick="selectMode(this)">
+                <span class="mode-icon">📚</span>
+                <div class="mode-name">学習支援</div>
+                <div class="mode-desc">深い理解へ</div>
+            </div>
+            <div class="mode-btn" data-mode="translate" onclick="selectMode(this)">
+                <span class="mode-icon">🌐</span>
+                <div class="mode-name">翻訳・解釈</div>
+                <div class="mode-desc">言語を超えて</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analyze Button -->
+    <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">
+        <span>🚀</span>
+        <span>AIで分析する</span>
+    </button>
+
+    <!-- Result Card -->
+    <div class="result-card" id="resultCard">
+        <div class="result-header">
+            <div class="result-title">
+                <span>✨</span>
+                <span>分析結果</span>
+            </div>
+            <div class="result-actions">
+                <button class="action-btn" onclick="copyResult()">📋 コピー</button>
+                <button class="action-btn" onclick="saveToHistory()">💾 保存</button>
+            </div>
+        </div>
+        <div class="result-badge" id="resultBadge">詳細解説</div>
+        <div style="height: 16px;"></div>
+        <div class="result-content" id="resultContent"></div>
+    </div>
+
+    <!-- History -->
+    <div class="section-divider">
+        <div class="divider-line"></div>
+        <div class="divider-label">履歴</div>
+        <div class="divider-line"></div>
+    </div>
+
+    <div class="history-list" id="historyList">
+        <div class="history-empty">📭 分析履歴はありません</div>
+    </div>
+
+    <div class="bottom-space"></div>
+</div>
+
+<script>
+    // State
+    let selectedMode = 'explain';
+    let currentImageBase64 = null;
+    let currentImageType = null;
+    let analysisHistory = JSON.parse(localStorage.getItem('analyzerHistory') || '[]');
+
+    // Mode configs
+    const modeConfigs = {
+        explain: {
+            name: '詳細解説',
+            system: `あなたは優秀な教育者・解説者です。画像や文章を詳細かつわかりやすく解説してください。
+専門用語は使うが必ず説明を加え、初心者にもわかるよう丁寧に解説してください。
+マークダウン形式で、見出し・箇条書き・強調を使って読みやすく構成してください。`,
+        },
+        summary: {
+            name: '要約',
+            system: `あなたは優秀な要約専門家です。内容の要点を抽出し、簡潔にまとめてください。
+重要なポイントを箇条書きで示し、全体の結論を明確に述べてください。
+マークダウン形式で構造化してください。`,
+        },
+        critical: {
+            name: '批判的分析',
+            system: `あなたは批判的思考の専門家です。内容を多角的に分析し、
+強み・弱み・問題点・改善案を客観的に評価してください。
+単に批判するのではなく、建設的な観点から深く掘り下げてください。
+マークダウン形式で構造化してください。`,
+        },
+        creative: {
+            name: 'アイデア創出',
+            system: `あなたはクリエイティブシンカーです。この内容から新しいアイデア・応用・可能性を生み出してください。
+型にとらわれず、革新的で実用的なアイデアを提案してください。
+マークダウン形式で、アイデアごとに整理してください。`,
+        },
+        study: {
+            name: '学習支援',
+            system: `あなたは優れた教師です。この内容を学習教材として最大限活用できるよう支援してください。
+・なぜそうなるのかの「なぜ？」を深く掘り下げる
+・関連する概念・背景知識を補足する
+・理解を深める質問を提示する
+・具体的な例や比喩を使う
+マークダウン形式で構造化してください。`,
+        },
+        translate: {
+            name: '翻訳・解釈',
+            system: `あなたは多言語・多文化の専門家です。
+文章の場合は日本語に翻訳し、文化的背景や行間の意味も解説してください。
+画像の場合はそこに含まれる文字や記号を読み取り、意味を解釈してください。
+マークダウン形式で構造化してください。`,
+        },
+    };
+
+    // API Key management
+    const apiKeyInput = document.getElementById('apiKeyInput');
+
+    function loadApiKey() {
+        const saved = localStorage.getItem('claudeApiKey');
+        if (saved) {
+            apiKeyInput.value = saved;
+            updateApiStatus(true);
+            document.getElementById('apiBanner').classList.add('hidden');
+        }
+    }
+
+    apiKeyInput.addEventListener('input', () => {
+        const key = apiKeyInput.value.trim();
+        if (key.startsWith('sk-ant-')) {
+            localStorage.setItem('claudeApiKey', key);
+            updateApiStatus(true);
+            document.getElementById('apiBanner').classList.add('hidden');
+        } else if (key === '') {
+            localStorage.removeItem('claudeApiKey');
+            updateApiStatus(false);
+        } else {
+            updateApiStatus(null);
+        }
+    });
+
+    function updateApiStatus(valid) {
+        const dot = document.getElementById('statusDot');
+        const text = document.getElementById('statusText');
+        if (valid === true) {
+            dot.className = 'status-dot connected';
+            text.textContent = '設定済み ✓';
+            text.style.color = 'var(--success)';
+        } else if (valid === false) {
+            dot.className = 'status-dot';
+            text.textContent = '未設定';
+            text.style.color = 'var(--text-muted)';
+        } else {
+            dot.className = 'status-dot error';
+            text.textContent = '無効なキー形式';
+            text.style.color = 'var(--secondary)';
+        }
+    }
+
+    function toggleApiVisibility() {
+        const input = document.getElementById('apiKeyInput');
+        const btn = document.getElementById('toggleApiKey');
+        if (input.type === 'password') {
+            input.type = 'text';
+            btn.textContent = '🙈';
+        } else {
+            input.type = 'password';
+            btn.textContent = '👁';
+        }
+    }
+
+    // Image handling
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            showToast('画像ファイルを選択してください', 'error');
+            return;
+        }
+        if (file.size > 20 * 1024 * 1024) {
+            showToast('ファイルサイズは20MB以下にしてください', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const result = e.target.result;
+            currentImageBase64 = result.split(',')[1];
+            currentImageType = file.type;
+
+            document.getElementById('previewImg').src = result;
+            document.getElementById('imagePreview').style.display = 'block';
+            document.getElementById('uploadArea').style.display = 'none';
+
+            showToast('画像を読み込みました', 'success');
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+    }
+
+    function removeImage() {
+        currentImageBase64 = null;
+        currentImageType = null;
+        document.getElementById('previewImg').src = '';
+        document.getElementById('imagePreview').style.display = 'none';
+        document.getElementById('uploadArea').style.display = 'block';
+    }
+
+    // Mode selection
+    function selectMode(btn) {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedMode = btn.dataset.mode;
+    }
+
+    // Main analysis
+    async function analyze() {
+        const apiKey = localStorage.getItem('claudeApiKey');
+        if (!apiKey) {
+            showToast('APIキーを設定してください', 'error');
+            document.getElementById('apiKeyInput').focus();
+            return;
+        }
+
+        const text = document.getElementById('textInput').value.trim();
+        if (!text && !currentImageBase64) {
+            showToast('画像か文章を入力してください', 'error');
+            return;
+        }
+
+        const mode = modeConfigs[selectedMode];
+        showLoading(true);
+
+        const steps = [
+            '入力データを準備中...',
+            'Claude APIに接続中...',
+            'AIが解析中...',
+            '結果を整形中...',
+        ];
+        let stepIdx = 0;
+        const stepInterval = setInterval(() => {
+            stepIdx = (stepIdx + 1) % steps.length;
+            document.getElementById('loadingStep').textContent = steps[stepIdx];
+        }, 1500);
+
+        try {
+            // Build message content
+            const content = [];
+
+            if (currentImageBase64) {
+                content.push({
+                    type: 'image',
+                    source: {
+                        type: 'base64',
+                        media_type: currentImageType,
+                        data: currentImageBase64,
+                    }
+                });
+            }
+
+            const userText = text ||
+                (currentImageBase64 ? 'この画像を詳しく分析・解説してください。' : '');
+            content.push({ type: 'text', text: userText });
+
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-dangerous-direct-browser-access': 'true',
+                },
+                body: JSON.stringify({
+                    model: 'claude-sonnet-4-6',
+                    max_tokens: 2048,
+                    system: mode.system,
+                    messages: [{ role: 'user', content }],
+                }),
+            });
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.error?.message || `APIエラー: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const resultText = data.content[0].text;
+
+            clearInterval(stepInterval);
+            showLoading(false);
+
+            // Display result
+            displayResult(resultText, mode.name, text, currentImageBase64);
+
+            // Auto-save to history
+            autoSaveHistory(text, resultText, mode.name);
+
+        } catch (err) {
+            clearInterval(stepInterval);
+            showLoading(false);
+            console.error(err);
+
+            let msg = err.message;
+            if (msg.includes('401')) msg = 'APIキーが無効です。確認してください。';
+            else if (msg.includes('429')) msg = 'リクエスト制限に達しました。しばらく待ってください。';
+            else if (msg.includes('Failed to fetch')) msg = 'ネットワークエラー。接続を確認してください。';
+
+            showToast(msg, 'error');
+        }
+    }
+
+    function displayResult(text, modeName, question, imageBase64) {
+        const card = document.getElementById('resultCard');
+        const content = document.getElementById('resultContent');
+        const badge = document.getElementById('resultBadge');
+
+        badge.textContent = `${modeConfigs[selectedMode].name}`;
+
+        // Simple markdown rendering
+        content.innerHTML = renderMarkdown(text);
+
+        card.classList.add('visible');
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // Store current result for save
+        window._currentResult = { text, modeName, question, imageBase64 };
+    }
+
+    function renderMarkdown(text) {
+        return text
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+            .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+            .replace(/^- (.+)$/gm, '<li>$1</li>')
+            .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+            .replace(/(<li>.*<\/li>)/gs, (m) => {
+                const items = m.match(/<li>.*?<\/li>/g);
+                return items ? '<ul>' + items.join('') + '</ul>' : m;
+            })
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>')
+            .replace(/^(?!<[hpubolicode])(.+)$/gm, (m) => m.startsWith('<') ? m : `<p>${m}</p>`)
+            .replace(/<p><\/p>/g, '')
+            .replace(/<p>(<[hul])/g, '$1')
+            .replace(/(<\/[hul][^>]*>)<\/p>/g, '$1');
+    }
+
+    function copyResult() {
+        const text = document.getElementById('resultContent').innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('コピーしました ✓', 'success');
+        }).catch(() => {
+            showToast('コピーに失敗しました', 'error');
+        });
+    }
+
+    function autoSaveHistory(question, result, modeName) {
+        if (!window._currentResult) return;
+        const item = {
+            id: Date.now(),
+            mode: modeName,
+            question: question || '(画像のみ)',
+            result,
+            imageBase64: currentImageBase64 ? currentImageBase64.substring(0, 100) + '...' : null,
+            imagePreview: currentImageBase64 ? 'data:' + currentImageType + ';base64,' + currentImageBase64 : null,
+            time: new Date().toISOString(),
+        };
+        analysisHistory.unshift(item);
+        if (analysisHistory.length > 20) analysisHistory = analysisHistory.slice(0, 20);
+        localStorage.setItem('analyzerHistory', JSON.stringify(analysisHistory));
+        renderHistory();
+    }
+
+    function saveToHistory() {
+        showToast('保存済みです', 'success');
+    }
+
+    function renderHistory() {
+        const list = document.getElementById('historyList');
+        if (analysisHistory.length === 0) {
+            list.innerHTML = '<div class="history-empty">📭 分析履歴はありません</div>';
+            return;
+        }
+
+        list.innerHTML = analysisHistory.map(item => {
+            const thumb = item.imagePreview
+                ? `<img class="history-thumb" src="${item.imagePreview}" alt="">`
+                : `<div class="history-thumb-placeholder">📝</div>`;
+            const time = new Date(item.time).toLocaleString('ja-JP', {
+                month: 'numeric', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+            const q = (item.question || '').substring(0, 40) + (item.question?.length > 40 ? '...' : '');
+            return `
+                <div class="history-item" onclick="loadHistory(${item.id})">
+                    ${thumb}
+                    <div class="history-info">
+                        <div class="history-mode">${item.mode}</div>
+                        <div class="history-question">${q || '(画像のみ)'}</div>
+                        <div class="history-time">${time}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function loadHistory(id) {
+        const item = analysisHistory.find(h => h.id === id);
+        if (!item) return;
+        document.getElementById('resultContent').innerHTML = renderMarkdown(item.result);
+        document.getElementById('resultBadge').textContent = item.mode;
+        document.getElementById('resultCard').classList.add('visible');
+        document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // UI helpers
+    function showLoading(visible) {
+        const overlay = document.getElementById('loadingOverlay');
+        overlay.classList.toggle('visible', visible);
+    }
+
+    function showToast(msg, type = '') {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.className = 'toast' + (type ? ' ' + type : '') + ' show';
+        setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+
+    // Drag and drop
+    const uploadArea = document.getElementById('uploadArea');
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('drag-over');
+    });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const fakeEvent = { target: { files: [file], value: '' } };
+            handleFileSelect(fakeEvent);
+        }
+    });
+
+    // Enter key to analyze
+    document.getElementById('textInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.ctrlKey) analyze();
+    });
+
+    // Init
+    loadApiKey();
+    renderHistory();
+</script>
+</body>
+</html>
