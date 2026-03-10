@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Manus Analyzer</title>
+<style>
+:root{
+  --bg:#0a0a14;--s1:#12121f;--s2:#1a1a2e;--s3:#22223a;
+  --p:#7c6fff;--p2:#a78bfa;--acc:#38d9a9;--warn:#fa8231;--err:#ff6b6b;
+  --t:#e8e8f5;--tm:#9090b0;--bd:#2a2a45;--r:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--t);font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif;overflow-x:hidden}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#12122a,#0a0a18);border-bottom:1px solid var(--bd);padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.hdr-logo{width:38px;height:38px;background:linear-gradient(135deg,var(--p),#c084fc);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.hdr-text h1{font-size:17px;font-weight:700;background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hdr-text p{font-size:11px;color:var(--tm)}
+.hdr-badge{margin-left:auto;background:rgba(56,217,169,0.15);border:1px solid rgba(56,217,169,0.3);color:var(--acc);font-size:10px;padding:4px 10px;border-radius:20px;flex-shrink:0}
+
+/* TABS */
+.tabs{display:flex;background:var(--s1);border-bottom:1px solid var(--bd);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:80px;padding:13px 8px;font-size:13px;font-weight:600;color:var(--tm);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:.2s;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:5px}
+.tab.active{color:var(--p2);border-bottom-color:var(--p2)}
+
+/* MAIN */
+.main{max-width:760px;margin:0 auto;padding:14px 14px 60px}
+
+/* PANEL */
+.panel{display:none}.panel.active{display:block}
+
+/* CARD */
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.card-h{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.card-ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.ic-p{background:rgba(124,111,255,.2)}.ic-g{background:rgba(56,217,169,.2)}.ic-b{background:rgba(96,165,250,.2)}.ic-o{background:rgba(250,130,49,.2)}
+.card-title{font-size:14px;font-weight:600}
+.card-sub{font-size:11px;color:var(--tm)}
+
+/* UPLOAD */
+.drop{border:2px dashed var(--bd);border-radius:var(--r);padding:28px 16px;text-align:center;cursor:pointer;background:var(--s2);position:relative;transition:.2s}
+.drop:hover,.drop.over{border-color:var(--p);background:rgba(124,111,255,.05)}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:40px;display:block;margin-bottom:10px}
+.drop-t{font-size:14px;font-weight:600;margin-bottom:4px}
+.drop-s{font-size:12px;color:var(--tm)}
+
+/* BTN ROW */
+.btn-row{display:flex;gap:10px;margin-top:12px}
+.cbtn{flex:1;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 8px;color:var(--t);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.2s}
+.cbtn:hover{border-color:var(--p)}
+
+/* IMG PREVIEW */
+.img-wrap{display:none;border-radius:var(--r);overflow:hidden;background:var(--s2);position:relative;margin-top:12px}
+.img-wrap img{width:100%;max-height:260px;object-fit:contain;display:block}
+.img-rm{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.7);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* TEXTAREA */
+.ta{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:14px;font-size:14px;color:var(--t);outline:none;resize:vertical;min-height:110px;font-family:inherit;line-height:1.7;transition:.2s}
+.ta:focus{border-color:var(--p)}
+.ta::placeholder{color:var(--tm)}
+
+/* ANALYZE BTN */
+.abtn{width:100%;background:linear-gradient(135deg,var(--p),#8b5cf6);border:none;border-radius:var(--r);padding:17px;font-size:15px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:.3s;box-shadow:0 4px 20px rgba(124,111,255,.3);margin-bottom:14px}
+.abtn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 28px rgba(124,111,255,.4)}
+.abtn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.spin{width:18px;height:18px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* RESULT */
+.res-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:18px;display:none;margin-bottom:14px}
+.res-card.show{display:block}
+.res-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.res-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.act-btn{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:7px 12px;color:var(--tm);font-size:12px;cursor:pointer;transition:.2s}
+.act-btn:hover{border-color:var(--p);color:var(--t)}
+
+/* METRICS GRID */
+.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+@media(min-width:480px){.metrics{grid-template-columns:repeat(4,1fr)}}
+.metric{background:var(--s2);border-radius:10px;padding:12px;text-align:center}
+.metric-val{font-size:22px;font-weight:800;background:linear-gradient(135deg,var(--p2),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.metric-lbl{font-size:11px;color:var(--tm);margin-top:3px}
+
+/* SECTION */
+.sec{margin-bottom:18px}
+.sec-t{font-size:13px;font-weight:700;color:var(--p2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.sec-t::after{content:'';flex:1;height:1px;background:var(--bd)}
+
+/* KEYWORD TAGS */
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{background:rgba(124,111,255,.15);border:1px solid rgba(124,111,255,.25);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--p2)}
+.tag.high{background:rgba(56,217,169,.15);border-color:rgba(56,217,169,.25);color:var(--acc)}
+.tag.med{background:rgba(96,165,250,.15);border-color:rgba(96,165,250,.25);color:#60a5fa}
+
+/* SENTENCE LIST */
+.sents{display:flex;flex-direction:column;gap:8px}
+.sent-item{background:var(--s2);border-radius:10px;padding:12px;border-left:3px solid var(--p);font-size:13px;line-height:1.7}
+.sent-score{font-size:10px;color:var(--tm);margin-bottom:4px}
+
+/* PROGRESS BAR */
+.pbar-wrap{margin-bottom:10px}
+.pbar-info{display:flex;justify-content:space-between;font-size:12px;color:var(--tm);margin-bottom:5px}
+.pbar{background:var(--s3);border-radius:4px;height:8px;overflow:hidden}
+.pbar-fill{height:100%;border-radius:4px;transition:width .5s ease}
+
+/* COLOR PALETTE */
+.palette{display:flex;gap:8px;flex-wrap:wrap}
+.swatch{border-radius:10px;overflow:hidden;text-align:center;min-width:60px;flex:1}
+.swatch-color{height:50px;border-radius:8px 8px 0 0}
+.swatch-label{font-size:10px;color:var(--tm);padding:4px 2px;background:var(--s2)}
+
+/* IMAGE STATS */
+.img-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.img-stat{background:var(--s2);border-radius:10px;padding:12px;text-align:center}
+.img-stat-v{font-size:18px;font-weight:800;color:var(--acc)}
+.img-stat-l{font-size:11px;color:var(--tm);margin-top:2px}
+
+/* SENTIMENT */
+.sent-bar{background:linear-gradient(to right,var(--err),var(--s3) 50%,var(--acc));border-radius:4px;height:10px;position:relative;margin:8px 0}
+.sent-cursor{position:absolute;top:-3px;width:16px;height:16px;background:#fff;border-radius:50%;transform:translateX(-50%);box-shadow:0 2px 6px rgba(0,0,0,.4);transition:left .5s}
+.sent-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--tm)}
+
+/* LOADING */
+.loading-ov{display:none;position:fixed;inset:0;background:rgba(10,10,20,.85);z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:18px;backdrop-filter:blur(4px)}
+.loading-ov.show{display:flex}
+.orb{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--p),#c084fc);animation:pulse 1.4s ease-in-out infinite;display:flex;align-items:center;justify-content:center;font-size:32px}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.12);opacity:.8}}
+.load-t{font-size:16px;font-weight:600}
+.load-s{font-size:13px;color:var(--tm);text-align:center}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:11px 20px;font-size:13px;z-index:300;transition:transform .3s;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:var(--acc);color:var(--acc)}
+.toast.ng{border-color:var(--err);color:var(--err)}
+
+/* HISTORY */
+.hist-item{background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:14px;cursor:pointer;transition:.2s;display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.hist-item:hover{border-color:var(--p)}
+.hist-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0}
+.hist-ph{width:44px;height:44px;border-radius:8px;background:rgba(124,111,255,.1);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.hist-q{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-m{font-size:11px;color:var(--p2);margin-bottom:2px}
+.hist-t{font-size:11px;color:var(--tm);margin-top:2px}
+.empty{text-align:center;padding:30px;color:var(--tm);font-size:14px}
+</style>
+</head>
+<body>
+
+<div class="loading-ov" id="lov">
+  <div class="orb">🧠</div>
+  <div class="load-t">解析中...</div>
+  <div class="load-s" id="lstep">データを処理しています</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="hdr">
+  <div class="hdr-logo">🔍</div>
+  <div class="hdr-text">
+    <h1>Manus Analyzer</h1>
+    <p>画像・文章を深く理解する</p>
+  </div>
+  <div class="hdr-badge">✓ 完全無料</div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('analyze',this)">🔬 解析</button>
+  <button class="tab" onclick="switchTab('history',this)">📋 履歴</button>
+  <button class="tab" onclick="switchTab('about',this)">ℹ️ 使い方</button>
+</div>
+
+<div class="main">
+
+<!-- ===== ANALYZE PANEL ===== -->
+<div class="panel active" id="panel-analyze">
+
+  <!-- Image -->
+  <div class="card">
+    <div class="card-h">
+      <div class="card-ic ic-p">🖼️</div>
+      <div><div class="card-title">画像（任意）</div><div class="card-sub">写真・図・スクリーンショット</div></div>
+    </div>
+    <div class="drop" id="drop">
+      <input type="file" id="fileIn" accept="image/*" onchange="loadImg(event)">
+      <span class="drop-icon">📷</span>
+      <div class="drop-t">タップして画像を選択</div>
+      <div class="drop-s">またはドラッグ＆ドロップ</div>
+    </div>
+    <div class="btn-row">
+      <button class="cbtn" onclick="document.getElementById('camIn').click()">📸 カメラ</button>
+      <button class="cbtn" onclick="document.getElementById('fileIn').click()">📁 ファイル</button>
+    </div>
+    <input type="file" id="camIn" accept="image/*" capture="environment" onchange="loadImg(event)" style="display:none">
+    <div class="img-wrap" id="imgWrap">
+      <img id="prevImg" src="" alt="">
+      <button class="img-rm" onclick="clearImg()">✕</button>
+    </div>
+    <canvas id="cvs" style="display:none"></canvas>
+  </div>
+
+  <!-- Text -->
+  <div class="card">
+    <div class="card-h">
+      <div class="card-ic ic-b">✏️</div>
+      <div><div class="card-title">文章・テキスト（任意）</div><div class="card-sub">分析したい内容を貼り付けまたは入力</div></div>
+    </div>
+    <textarea class="ta" id="textIn" placeholder="例: ニュース記事・レポート・メモ・英文など&#10;画像のみでも解析できます"></textarea>
+    <div style="text-align:right;font-size:11px;color:var(--tm);margin-top:6px" id="charCount">0 文字</div>
+  </div>
+
+  <!-- Analyze Button -->
+  <button class="abtn" id="abtn" onclick="analyze()">
+    <span id="abtn-spin" class="spin"></span>
+    <span id="abtn-txt">🚀 解析する</span>
+  </button>
+
+  <!-- RESULT -->
+  <div class="res-card" id="resCard">
+    <div class="res-hdr">
+      <div class="res-title">✨ 解析結果</div>
+      <div style="display:flex;gap:8px">
+        <button class="act-btn" onclick="copyRes()">📋 コピー</button>
+        <button class="act-btn" onclick="shareRes()">🔗 共有</button>
+      </div>
+    </div>
+    <div id="resBody"></div>
+  </div>
+
+</div>
+
+<!-- ===== HISTORY PANEL ===== -->
+<div class="panel" id="panel-history">
+  <div class="card">
+    <div class="card-h">
+      <div class="card-ic ic-o">📋</div>
+      <div><div class="card-title">解析履歴</div><div class="card-sub">過去の結果（最大20件）</div></div>
+    </div>
+    <div id="histList"><div class="empty">📭 履歴はありません</div></div>
+  </div>
+</div>
+
+<!-- ===== ABOUT PANEL ===== -->
+<div class="panel" id="panel-about">
+  <div class="card">
+    <div class="card-h">
+      <div class="card-ic ic-g">ℹ️</div>
+      <div><div class="card-title">使い方</div></div>
+    </div>
+    <div style="font-size:13px;line-height:1.9;color:var(--tm)">
+      <p style="color:var(--acc);font-weight:700;margin-bottom:10px">📱 完全オフライン・無料で動作</p>
+      <p>インターネット不要・API不要。このファイルだけで動きます。</p>
+      <br>
+      <p style="color:var(--p2);font-weight:600">🖼️ 画像解析でできること</p>
+      <ul style="padding-left:18px;margin-top:6px">
+        <li>カラーパレット抽出（主要な色を分析）</li>
+        <li>明るさ・コントラスト・彩度の測定</li>
+        <li>暖色・寒色・中性の判定</li>
+        <li>画像の複雑さ・特徴の分析</li>
+      </ul>
+      <br>
+      <p style="color:var(--p2);font-weight:600">📝 文章解析でできること</p>
+      <ul style="padding-left:18px;margin-top:6px">
+        <li>キーワード自動抽出（重要度スコア付き）</li>
+        <li>重要文の抽出（要約）</li>
+        <li>読みやすさ・文字数・段落数の測定</li>
+        <li>感情分析（ポジティブ/ネガティブ）</li>
+        <li>文章構造の分析</li>
+      </ul>
+      <br>
+      <p style="color:var(--tm);font-size:12px">※ AIではなく独自アルゴリズムで解析します</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ===================== STATE =====================
+let imgData = null, imgType = null;
+let history = JSON.parse(localStorage.getItem('manus_hist')||'[]');
+
+// ===================== UI =====================
+function switchTab(name, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name==='history') renderHist();
+}
+
+function toast(msg, type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast'+(type?' '+type:'')+' show';
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+function setLoading(on, step=''){
+  document.getElementById('lov').classList.toggle('show',on);
+  if(step) document.getElementById('lstep').textContent=step;
+}
+
+// ===================== IMAGE =====================
+function loadImg(e){
+  const f=e.target.files[0]; if(!f) return;
+  if(!f.type.startsWith('image/')){toast('画像ファイルを選択してください','ng');return;}
+  const r=new FileReader();
+  r.onload=ev=>{
+    const src=ev.target.result;
+    imgData=src.split(',')[1]; imgType=f.type;
+    document.getElementById('prevImg').src=src;
+    document.getElementById('imgWrap').style.display='block';
+    document.getElementById('drop').style.display='none';
+    toast('画像を読み込みました','ok');
+  };
+  r.readAsDataURL(f); e.target.value='';
+}
+
+function clearImg(){
+  imgData=null; imgType=null;
+  document.getElementById('prevImg').src='';
+  document.getElementById('imgWrap').style.display='none';
+  document.getElementById('drop').style.display='block';
+}
+
+// Drag-drop
+const drop=document.getElementById('drop');
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over')});
+drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{
+  e.preventDefault(); drop.classList.remove('over');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/')){
+    loadImg({target:{files:[f],value:''}});
+  }
+});
+
+// Char count
+document.getElementById('textIn').addEventListener('input',function(){
+  document.getElementById('charCount').textContent=this.value.length+' 文字';
+});
+
+// ===================== IMAGE ANALYSIS =====================
+function analyzeImage(src){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      const cvs=document.getElementById('cvs');
+      const W=Math.min(img.width,200), H=Math.min(img.height,200);
+      cvs.width=W; cvs.height=H;
+      const ctx=cvs.getContext('2d');
+      ctx.drawImage(img,0,0,W,H);
+      const d=ctx.getImageData(0,0,W,H).data;
+
+      let r=0,g=0,b=0,bri=0,sat=0,n=0;
+      const colors=[];
+
+      for(let i=0;i<d.length;i+=4){
+        const ri=d[i],gi=d[i+1],bi=d[i+2];
+        r+=ri; g+=gi; b+=bi;
+        const brightness=(ri+gi+bi)/3;
+        bri+=brightness;
+        const max=Math.max(ri,gi,bi), min=Math.min(ri,gi,bi);
+        sat+=(max===0?0:(max-min)/max);
+        colors.push([ri,gi,bi]); n++;
+      }
+      r=Math.round(r/n); g=Math.round(g/n); b=Math.round(b/n);
+      bri=Math.round(bri/n);
+      sat=Math.round(sat/n*100);
+
+      // Color temperature
+      const temp = r > b ? '暖色系 🌅' : b > r ? '寒色系 🌊' : '中性 ⚖️';
+
+      // Simple k-means color palette (5 colors)
+      const palette = kMeans(colors, 5);
+
+      // Edge detection (simplified)
+      let edges=0;
+      for(let y=1;y<H-1;y++){
+        for(let x=1;x<W-1;x++){
+          const i=(y*W+x)*4;
+          const gx=Math.abs(d[i]-d[i+4])+Math.abs(d[i+1]-d[i+5]);
+          const gy=Math.abs(d[i]-d[(y+1)*W*4+x*4])+Math.abs(d[i+1]-d[(y+1)*W*4+x*4+1]);
+          if(gx+gy>60) edges++;
+        }
+      }
+      const complexity=Math.min(100,Math.round(edges/(W*H)*100*8));
+
+      // Dominant color name
+      const domColor=palette[0];
+      const colorName=getColorName(domColor[0],domColor[1],domColor[2]);
+
+      resolve({
+        avgColor:[r,g,b], brightness:bri, saturation:sat, temp, palette,
+        complexity, colorName, width:img.width, height:img.height
+      });
+    };
+    img.src='data:'+imgType+';base64,'+src;
+  });
+}
+
+function kMeans(colors, k){
+  // Simple random sampling for representative colors
+  const step=Math.floor(colors.length/k);
+  const centers=[];
+  for(let i=0;i<k;i++) centers.push([...colors[i*step]]);
+
+  for(let iter=0;iter<10;iter++){
+    const clusters=Array.from({length:k},()=>({r:0,g:0,b:0,n:0}));
+    for(const c of colors){
+      let best=0,bd=Infinity;
+      for(let j=0;j<k;j++){
+        const d=Math.hypot(c[0]-centers[j][0],c[1]-centers[j][1],c[2]-centers[j][2]);
+        if(d<bd){bd=d;best=j;}
+      }
+      clusters[best].r+=c[0]; clusters[best].g+=c[1]; clusters[best].b+=c[2]; clusters[best].n++;
+    }
+    for(let j=0;j<k;j++){
+      if(clusters[j].n>0){
+        centers[j]=[Math.round(clusters[j].r/clusters[j].n),
+                    Math.round(clusters[j].g/clusters[j].n),
+                    Math.round(clusters[j].b/clusters[j].n)];
+      }
+    }
+  }
+  return centers;
+}
+
+function rgb2hex(r,g,b){return'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('')}
+
+function getColorName(r,g,b){
+  const h=rgb2hue(r,g,b);
+  const s=(Math.max(r,g,b)-Math.min(r,g,b))/Math.max(r,g,b)||0;
+  const v=Math.max(r,g,b)/255;
+  if(s<0.1&&v>0.9) return '白';
+  if(s<0.1&&v<0.2) return '黒';
+  if(s<0.15) return 'グレー';
+  if(h<15||h>=345) return '赤';
+  if(h<45) return 'オレンジ';
+  if(h<75) return '黄色';
+  if(h<150) return '緑';
+  if(h<210) return 'シアン';
+  if(h<270) return '青';
+  if(h<315) return '紫';
+  return 'ピンク';
+}
+
+function rgb2hue(r,g,b){
+  r/=255;g/=255;b/=255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
+  if(d===0) return 0;
+  let h=max===r?((g-b)/d)%6:max===g?(b-r)/d+2:(r-g)/d+4;
+  return Math.round(h*60+360)%360;
+}
+
+// ===================== TEXT ANALYSIS =====================
+const JP_STOPS=new Set(['の','は','が','を','に','で','と','た','し','て','から','まで','より','な','も','へ','や','か','ね','よ','わ','ぞ','ぜ','こと','もの','ため','これ','それ','あれ','この','その','あの','どの','ここ','そこ','あそこ','という','など','ます','です','ない','ある','いる','する','なる','いう','れる','られる','せる','させる','でも','また','そして','しかし','ただ','すでに','まだ','もう','こう','そう','ああ','どう','今','時','人','事','物','場合','わたし','あなた','かれ','かの','われ','お','ご','不','無','非','未']);
+const EN_STOPS=new Set(['the','a','an','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','could','should','may','might','must','shall','can','need','dare','ought','used','to','of','in','on','at','by','for','with','about','against','between','into','through','during','before','after','above','below','from','up','down','out','off','over','under','and','or','but','if','while','because','as','until','although','though','since','when','where','who','which','what','how','why','this','that','these','those','i','you','he','she','it','we','they','me','him','her','us','them','my','your','his','its','our','their','not','no','nor','so','yet','both','either','neither','one','two','than','then','just','more','also','only','very','well','back','still','way','even','new','want','look','come','make','give','know','take','say','see','get','use','find','go','there']);
+
+function tokenizeJP(text){
+  // Extract nouns/content words from Japanese using character patterns
+  const tokens=[];
+  // CJK characters (likely Japanese/Chinese content words)
+  const cjk=text.match(/[\u3005\u3400-\u9FFF\uF900-\uFAFF]{2,}/g)||[];
+  cjk.forEach(t=>{if(!JP_STOPS.has(t)) tokens.push(t)});
+  // Katakana (often proper nouns/foreign words)
+  const kata=text.match(/[\u30A0-\u30FF]{3,}/g)||[];
+  kata.forEach(t=>tokens.push(t));
+  // Numbers with context
+  const nums=text.match(/\d+(?:[.,]\d+)?(?:円|人|個|年|月|日|時|分|秒|回|%|％|倍)?/g)||[];
+  nums.forEach(t=>tokens.push(t));
+  return tokens;
+}
+
+function tokenizeEN(text){
+  return text.toLowerCase().match(/[a-z']{3,}/g)?.filter(w=>!EN_STOPS.has(w))||[];
+}
+
+function getTokens(text){
+  const hasJP=/[\u3000-\u9FFF]/.test(text);
+  const jp=tokenizeJP(text);
+  const en=tokenizeEN(text);
+  return [...jp,...en];
+}
+
+function tfidf(tokens){
+  const freq={};
+  tokens.forEach(t=>{freq[t]=(freq[t]||0)+1});
+  const total=tokens.length||1;
+  return Object.entries(freq)
+    .map(([w,c])=>({word:w, score:c/total*(1+Math.log(c)), count:c}))
+    .sort((a,b)=>b.score-a.score);
+}
+
+function extractSentences(text){
+  // Split by sentence boundaries
+  return text.split(/[。！？!?\n]+/)
+    .map(s=>s.trim())
+    .filter(s=>s.length>5);
+}
+
+function scoreSentences(sents, keywords){
+  const kwSet=new Map(keywords.slice(0,20).map(k=>[k.word,k.score]));
+  return sents.map(s=>{
+    let score=0;
+    kwSet.forEach((v,k)=>{if(s.includes(k)) score+=v});
+    // Bonus for first/last sentences
+    const idx=sents.indexOf(s);
+    if(idx===0||idx===sents.length-1) score*=1.3;
+    // Penalty for too short/long
+    if(s.length<8) score*=0.5;
+    if(s.length>150) score*=0.8;
+    return {text:s,score};
+  }).sort((a,b)=>b.score-a.score);
+}
+
+function sentimentScore(text){
+  const pos=['良い','素晴らしい','優れ','成功','達成','向上','改善','増加','プラス','ポジティブ','嬉しい','楽しい','美しい','完璧','最高','best','good','great','excellent','success','positive','improve','increase','happy','beautiful','perfect','love','amazing','wonderful','benefit','advantage'];
+  const neg=['悪い','問題','失敗','減少','低下','危険','困難','課題','リスク','ネガティブ','悲しい','困る','worst','bad','poor','fail','problem','risk','danger','difficult','decrease','negative','issue','loss','damage','terrible','worse'];
+  let p=0,n=0;
+  const lower=text.toLowerCase();
+  pos.forEach(w=>{const r=new RegExp(w,'gi');p+=(lower.match(r)||[]).length});
+  neg.forEach(w=>{const r=new RegExp(w,'gi');n+=(lower.match(r)||[]).length});
+  const total=p+n||1;
+  return Math.round((p/total)*100);
+}
+
+function readability(text){
+  const sents=extractSentences(text).length||1;
+  const chars=text.replace(/\s/g,'').length;
+  const avg=chars/sents;
+  if(avg<20) return{score:90,label:'とても読みやすい'};
+  if(avg<40) return{score:75,label:'読みやすい'};
+  if(avg<60) return{score:55,label:'普通'};
+  if(avg<80) return{score:35,label:'やや難しい'};
+  return{score:15,label:'難しい'};
+}
+
+function analyzeText(text){
+  const tokens=getTokens(text);
+  const keywords=tfidf(tokens);
+  const sents=extractSentences(text);
+  const topSents=scoreSentences(sents,keywords).slice(0,3);
+  const sentiment=sentimentScore(text);
+  const read=readability(text);
+  const wordCount=text.replace(/\s/g,'').length;
+  const sentCount=sents.length;
+  const paraCount=(text.split(/\n\n+/)||[]).filter(p=>p.trim()).length||1;
+  const readTime=Math.ceil(wordCount/400);
+
+  // Detect language
+  const hasJP=/[\u3000-\u9FFF]/.test(text);
+  const lang=hasJP?'日本語':'English';
+
+  return {keywords:keywords.slice(0,20), topSents, sentiment, readability:read,
+          wordCount, sentCount, paraCount, readTime, lang};
+}
+
+// ===================== MAIN ANALYZE =====================
+async function analyze(){
+  const text=document.getElementById('textIn').value.trim();
+  if(!imgData&&!text){toast('画像か文章を入力してください','ng');return;}
+
+  const btn=document.getElementById('abtn');
+  btn.disabled=true;
+  document.getElementById('abtn-spin').style.display='block';
+  document.getElementById('abtn-txt').textContent='解析中...';
+  setLoading(true,'データを準備しています');
+
+  let imgResult=null, textResult=null;
+
+  try{
+    if(imgData){
+      setLoading(true,'画像を解析しています');
+      await new Promise(r=>setTimeout(r,300));
+      imgResult=await analyzeImage(imgData);
+    }
+    if(text){
+      setLoading(true,'文章を解析しています');
+      await new Promise(r=>setTimeout(r,200));
+      textResult=analyzeText(text);
+    }
+
+    setLoading(true,'結果を生成しています');
+    await new Promise(r=>setTimeout(r,200));
+
+    renderResult(imgResult, textResult, text);
+
+    // Save history
+    saveHistory(text, imgResult, textResult);
+
+  }catch(e){
+    toast('エラー: '+e.message,'ng');
+    console.error(e);
+  }finally{
+    setLoading(false);
+    btn.disabled=false;
+    document.getElementById('abtn-spin').style.display='none';
+    document.getElementById('abtn-txt').textContent='🚀 解析する';
+  }
+}
+
+// ===================== RENDER RESULT =====================
+function renderResult(img, txt, origText){
+  const body=document.getElementById('resBody');
+  let html='';
+
+  if(img){
+    html+=`<div class="sec"><div class="sec-t">🖼️ 画像分析</div>`;
+
+    // Stats
+    html+=`<div class="img-stats" style="margin-bottom:14px">
+      <div class="img-stat"><div class="img-stat-v">${img.brightness<85?'暗め':img.brightness>170?'明るい':'普通'}</div><div class="img-stat-l">明るさ</div></div>
+      <div class="img-stat"><div class="img-stat-v">${img.saturation}%</div><div class="img-stat-l">彩度</div></div>
+      <div class="img-stat"><div class="img-stat-v">${img.complexity}%</div><div class="img-stat-l">複雑さ</div></div>
+    </div>`;
+
+    // Color temp
+    html+=`<div class="pbar-wrap" style="margin-bottom:14px">
+      <div class="pbar-info"><span>色調</span><span>${img.temp}</span></div>
+    </div>`;
+
+    // Palette
+    html+=`<div class="pbar-info" style="margin-bottom:8px"><span>カラーパレット</span><span>${img.colorName}が主体</span></div>`;
+    html+=`<div class="palette">`;
+    img.palette.forEach(([r,g,b])=>{
+      const hex=rgb2hex(r,g,b);
+      html+=`<div class="swatch"><div class="swatch-color" style="background:${hex}"></div><div class="swatch-label">${hex}</div></div>`;
+    });
+    html+=`</div>`;
+
+    // Brightness bar
+    const bpct=Math.round(img.brightness/255*100);
+    html+=`<div class="pbar-wrap" style="margin-top:14px">
+      <div class="pbar-info"><span>明るさ</span><span>${bpct}%</span></div>
+      <div class="pbar"><div class="pbar-fill" style="width:${bpct}%;background:linear-gradient(to right,#1a1a3e,#ffe066)"></div></div>
+    </div>`;
+
+    // Saturation bar
+    html+=`<div class="pbar-wrap">
+      <div class="pbar-info"><span>彩度</span><span>${img.saturation}%</span></div>
+      <div class="pbar"><div class="pbar-fill" style="width:${img.saturation}%;background:linear-gradient(to right,#666,#7c6fff)"></div></div>
+    </div>`;
+
+    // Size
+    html+=`<div style="font-size:12px;color:var(--tm);margin-top:10px">画像サイズ: ${img.width} × ${img.height} px</div>`;
+    html+=`</div>`;
+  }
+
+  if(txt){
+    // Metrics
+    html+=`<div class="sec"><div class="sec-t">📊 基本情報</div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-val">${txt.wordCount}</div><div class="metric-lbl">文字数</div></div>
+        <div class="metric"><div class="metric-val">${txt.sentCount}</div><div class="metric-lbl">文の数</div></div>
+        <div class="metric"><div class="metric-val">${txt.paraCount}</div><div class="metric-lbl">段落</div></div>
+        <div class="metric"><div class="metric-val">${txt.readTime}分</div><div class="metric-lbl">読書時間</div></div>
+      </div>
+    </div>`;
+
+    // Readability
+    html+=`<div class="sec"><div class="sec-t">📖 読みやすさ</div>
+      <div class="pbar-wrap">
+        <div class="pbar-info"><span>${txt.readability.label}</span><span>${txt.readability.score}/100</span></div>
+        <div class="pbar"><div class="pbar-fill" style="width:${txt.readability.score}%;background:linear-gradient(to right,var(--err),var(--acc))"></div></div>
+      </div>
+    </div>`;
+
+    // Sentiment
+    html+=`<div class="sec"><div class="sec-t">💭 感情トーン</div>
+      <div class="sent-bar"><div class="sent-cursor" style="left:${txt.sentiment}%"></div></div>
+      <div class="sent-labels"><span>ネガティブ</span><span>${txt.sentiment>=50?'ポジティブ寄り':'ネガティブ寄り'} (${txt.sentiment}%)</span><span>ポジティブ</span></div>
+    </div>`;
+
+    // Keywords
+    if(txt.keywords.length>0){
+      html+=`<div class="sec"><div class="sec-t">🔑 重要キーワード</div><div class="tags">`;
+      txt.keywords.slice(0,15).forEach((k,i)=>{
+        const cls=i<3?'high':i<7?'med':'';
+        html+=`<span class="tag ${cls}">${k.word} <span style="opacity:.6;font-size:10px">×${k.count}</span></span>`;
+      });
+      html+=`</div></div>`;
+    }
+
+    // Summary
+    if(txt.topSents.length>0){
+      html+=`<div class="sec"><div class="sec-t">📌 重要文（要約）</div><div class="sents">`;
+      txt.topSents.forEach((s,i)=>{
+        html+=`<div class="sent-item"><div class="sent-score">重要度 ${['★★★','★★☆','★☆☆'][i]||'★☆☆'}</div>${escHtml(s.text)}</div>`;
+      });
+      html+=`</div></div>`;
+    }
+
+    // Language
+    html+=`<div style="font-size:12px;color:var(--tm)">検出言語: ${txt.lang}</div>`;
+  }
+
+  body.innerHTML=html;
+  document.getElementById('resCard').classList.add('show');
+  document.getElementById('resCard').scrollIntoView({behavior:'smooth',block:'start'});
+  toast('解析完了！','ok');
+
+  window._lastResult={img,txt,origText};
+}
+
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// ===================== COPY / SHARE =====================
+function copyRes(){
+  const el=document.getElementById('resBody');
+  const text=el.innerText;
+  navigator.clipboard.writeText(text).then(()=>toast('コピーしました','ok')).catch(()=>toast('コピー失敗','ng'));
+}
+
+function shareRes(){
+  if(!window._lastResult) return;
+  const r=window._lastResult;
+  let text='【Manus Analyzer 解析結果】\n\n';
+  if(r.txt){
+    text+=`文字数: ${r.txt.wordCount} / 感情: ${r.txt.sentiment>=50?'ポジティブ':'ネガティブ'}寄り\n`;
+    text+=`キーワード: ${r.txt.keywords.slice(0,5).map(k=>k.word).join(', ')}\n`;
+    if(r.txt.topSents[0]) text+=`\n要約: ${r.txt.topSents[0].text}`;
+  }
+  if(navigator.share){
+    navigator.share({title:'Manus Analyzer',text}).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(text).then(()=>toast('クリップボードにコピーしました','ok'));
+  }
+}
+
+// ===================== HISTORY =====================
+function saveHistory(text, imgRes, txtRes){
+  const item={
+    id:Date.now(),
+    text:text.substring(0,60)||(imgRes?'(画像のみ)':''),
+    imgPreview:imgData?'data:'+imgType+';base64,'+imgData.substring(0,200)+'...':null,
+    imgData:imgData,imgType,
+    summary:txtRes?.topSents[0]?.text||'',
+    keywords:txtRes?.keywords.slice(0,5).map(k=>k.word)||[],
+    sentiment:txtRes?.sentiment,
+    time:new Date().toISOString()
+  };
+  history.unshift(item);
+  if(history.length>20) history=history.slice(0,20);
+  localStorage.setItem('manus_hist',JSON.stringify(history));
+}
+
+function renderHist(){
+  const el=document.getElementById('histList');
+  if(!history.length){el.innerHTML='<div class="empty">📭 履歴はありません</div>';return;}
+  el.innerHTML=history.map(h=>{
+    const thumb=h.imgData
+      ?`<img class="hist-thumb" src="data:${h.imgType};base64,${h.imgData}" alt="">`
+      :`<div class="hist-ph">📝</div>`;
+    const t=new Date(h.time).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const kw=h.keywords.slice(0,3).join(', ');
+    return `<div class="hist-item" onclick="loadHist(${h.id})">
+      ${thumb}
+      <div style="flex:1;min-width:0">
+        <div class="hist-m">${kw||'画像解析'}</div>
+        <div class="hist-q">${h.text||'(テキストなし)'}</div>
+        ${h.summary?`<div style="font-size:11px;color:var(--tm);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.summary}</div>`:''}
+        <div class="hist-t">${t}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function loadHist(id){
+  const h=history.find(x=>x.id===id); if(!h) return;
+  // Restore text
+  document.getElementById('textIn').value=h.text;
+  document.getElementById('charCount').textContent=h.text.length+' 文字';
+  // Restore image
+  if(h.imgData&&h.imgType){
+    imgData=h.imgData; imgType=h.imgType;
+    const src='data:'+h.imgType+';base64,'+h.imgData;
+    document.getElementById('prevImg').src=src;
+    document.getElementById('imgWrap').style.display='block';
+    document.getElementById('drop').style.display='none';
+  }
+  switchTab('analyze',document.querySelectorAll('.tab')[0]);
+  toast('履歴を読み込みました','ok');
+}
+</script>
+</body>
+</html>
